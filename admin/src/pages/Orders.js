@@ -1,0 +1,284 @@
+import React, { useState, useEffect } from 'react';
+import supabase from '../lib/supabase';
+import OrdersTable from '../components/OrdersTable';
+import { FiFilter, FiRefreshCw } from 'react-icons/fi';
+
+const Orders = () => {
+  // State
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [dateRange, setDateRange] = useState('all'); // all, today, week, month
+  const [stats, setStats] = useState({
+    total: 0,
+    pending: 0,
+    processing: 0,
+    completed: 0,
+    cancelled: 0,
+    refunded: 0,
+  });
+
+  // Fetch orders
+  useEffect(() => {
+    fetchOrders();
+  }, [statusFilter, dateRange]);
+
+  // Fetch orders from Supabase
+  const fetchOrders = async () => {
+    try {
+      setLoading(true);
+      
+      // Build query
+      let query = supabase
+        .from('orders')
+        .select(`
+          id,
+          order_number,
+          user_id,
+          status,
+          total_amount,
+          created_at,
+          profiles:user_id (email)
+        `)
+        .order('created_at', { ascending: false });
+      
+      // Apply status filter
+      if (statusFilter !== 'all') {
+        query = query.eq('status', statusFilter);
+      }
+      
+      // Apply date filter
+      if (dateRange !== 'all') {
+        const now = new Date();
+        let startDate;
+        
+        switch (dateRange) {
+          case 'today':
+            startDate = new Date(now.setHours(0, 0, 0, 0));
+            break;
+          case 'week':
+            startDate = new Date(now);
+            startDate.setDate(now.getDate() - 7);
+            break;
+          case 'month':
+            startDate = new Date(now);
+            startDate.setMonth(now.getMonth() - 1);
+            break;
+          default:
+            startDate = null;
+        }
+        
+        if (startDate) {
+          query = query.gte('created_at', startDate.toISOString());
+        }
+      }
+      
+      // Execute query
+      const { data, error } = await query;
+      
+      if (error) throw error;
+      
+      // Transform data to include user email
+      const transformedData = data.map(order => ({
+        ...order,
+        user_email: order.profiles?.email,
+      }));
+      
+      setOrders(transformedData);
+      
+      // Fetch order stats
+      await fetchOrderStats();
+    } catch (error) {
+      console.error('Error fetching orders:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  // Fetch order stats
+  const fetchOrderStats = async () => {
+    try {
+      // Get total count
+      const { count: total, error: totalError } = await supabase
+        .from('orders')
+        .select('id', { count: 'exact' });
+        
+      if (totalError) throw totalError;
+      
+      // Get counts by status
+      const statuses = ['pending', 'processing', 'completed', 'cancelled', 'refunded'];
+      const statusCounts = {};
+      
+      for (const status of statuses) {
+        const { count, error } = await supabase
+          .from('orders')
+          .select('id', { count: 'exact' })
+          .eq('status', status);
+          
+        if (error) throw error;
+        
+        statusCounts[status] = count;
+      }
+      
+      setStats({
+        total,
+        ...statusCounts,
+      });
+    } catch (error) {
+      console.error('Error fetching order stats:', error);
+    }
+  };
+  
+  // Handle status filter change
+  const handleStatusChange = (status) => {
+    setStatusFilter(status);
+  };
+  
+  // Handle date range change
+  const handleDateRangeChange = (range) => {
+    setDateRange(range);
+  };
+  
+  // Handle refresh
+  const handleRefresh = () => {
+    fetchOrders();
+  };
+  
+  return (
+    <div>
+      <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Manajemen Pesanan</h1>
+          <p className="text-gray-500">Kelola dan pantau semua pesanan</p>
+        </div>
+        <button
+          onClick={handleRefresh}
+          className="mt-4 sm:mt-0 btn btn-outline flex items-center"
+          disabled={loading}
+        >
+          <FiRefreshCw className={`mr-2 ${loading ? 'animate-spin' : ''}`} />
+          Refresh
+        </button>
+      </div>
+      
+      {/* Order Stats */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
+        <div 
+          className={`bg-white rounded-lg shadow-sm p-4 cursor-pointer border-2 ${
+            statusFilter === 'all' ? 'border-primary' : 'border-transparent'
+          }`}
+          onClick={() => handleStatusChange('all')}
+        >
+          <p className="text-sm text-gray-500">Semua</p>
+          <p className="text-xl font-bold">{stats.total}</p>
+        </div>
+        <div 
+          className={`bg-white rounded-lg shadow-sm p-4 cursor-pointer border-2 ${
+            statusFilter === 'pending' ? 'border-primary' : 'border-transparent'
+          }`}
+          onClick={() => handleStatusChange('pending')}
+        >
+          <p className="text-sm text-gray-500">Menunggu</p>
+          <p className="text-xl font-bold">{stats.pending}</p>
+        </div>
+        <div 
+          className={`bg-white rounded-lg shadow-sm p-4 cursor-pointer border-2 ${
+            statusFilter === 'processing' ? 'border-primary' : 'border-transparent'
+          }`}
+          onClick={() => handleStatusChange('processing')}
+        >
+          <p className="text-sm text-gray-500">Diproses</p>
+          <p className="text-xl font-bold">{stats.processing}</p>
+        </div>
+        <div 
+          className={`bg-white rounded-lg shadow-sm p-4 cursor-pointer border-2 ${
+            statusFilter === 'completed' ? 'border-primary' : 'border-transparent'
+          }`}
+          onClick={() => handleStatusChange('completed')}
+        >
+          <p className="text-sm text-gray-500">Selesai</p>
+          <p className="text-xl font-bold">{stats.completed}</p>
+        </div>
+        <div 
+          className={`bg-white rounded-lg shadow-sm p-4 cursor-pointer border-2 ${
+            statusFilter === 'cancelled' ? 'border-primary' : 'border-transparent'
+          }`}
+          onClick={() => handleStatusChange('cancelled')}
+        >
+          <p className="text-sm text-gray-500">Dibatalkan</p>
+          <p className="text-xl font-bold">{stats.cancelled}</p>
+        </div>
+        <div 
+          className={`bg-white rounded-lg shadow-sm p-4 cursor-pointer border-2 ${
+            statusFilter === 'refunded' ? 'border-primary' : 'border-transparent'
+          }`}
+          onClick={() => handleStatusChange('refunded')}
+        >
+          <p className="text-sm text-gray-500">Dikembalikan</p>
+          <p className="text-xl font-bold">{stats.refunded}</p>
+        </div>
+      </div>
+      
+      {/* Date Filter */}
+      <div className="mb-6">
+        <div className="bg-white rounded-lg shadow-sm p-4">
+          <div className="flex items-center mb-4">
+            <FiFilter className="text-gray-500 mr-2" />
+            <h3 className="text-lg font-medium">Filter Tanggal</h3>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => handleDateRangeChange('all')}
+              className={`px-4 py-2 rounded-md text-sm ${
+                dateRange === 'all'
+                  ? 'bg-primary text-dark'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              Semua Waktu
+            </button>
+            <button
+              onClick={() => handleDateRangeChange('today')}
+              className={`px-4 py-2 rounded-md text-sm ${
+                dateRange === 'today'
+                  ? 'bg-primary text-dark'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              Hari Ini
+            </button>
+            <button
+              onClick={() => handleDateRangeChange('week')}
+              className={`px-4 py-2 rounded-md text-sm ${
+                dateRange === 'week'
+                  ? 'bg-primary text-dark'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              7 Hari Terakhir
+            </button>
+            <button
+              onClick={() => handleDateRangeChange('month')}
+              className={`px-4 py-2 rounded-md text-sm ${
+                dateRange === 'month'
+                  ? 'bg-primary text-dark'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              30 Hari Terakhir
+            </button>
+          </div>
+        </div>
+      </div>
+      
+      {/* Orders Table */}
+      <OrdersTable 
+        orders={orders} 
+        loading={loading} 
+        onStatusChange={handleStatusChange}
+      />
+    </div>
+  );
+};
+
+export default Orders;
