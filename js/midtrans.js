@@ -581,13 +581,45 @@ async function updateOrderStatus(orderId, status, paymentResult) {
 // Fungsi untuk update stok produk
 async function updateProductStock(orderId) {
   try {
-    // Ambil data order items
+    console.log("=== FRONTEND: UPDATING PRODUCT STOCK ===");
+    console.log("Order ID (order_number):", orderId);
+
+    // PERBAIKAN: Dapatkan UUID order dari order_number terlebih dahulu
+    const { data: orderData, error: orderError } = await supabase
+      .from("orders")
+      .select("id")
+      .eq("order_number", orderId)
+      .single();
+
+    if (orderError) {
+      console.error("Error getting order UUID:", orderError);
+      return;
+    }
+
+    if (!orderData) {
+      console.error("Order not found with order_number:", orderId);
+      return;
+    }
+
+    console.log("Order UUID found:", orderData.id);
+
+    // Ambil data order items menggunakan UUID yang benar
     const { data: orderItems, error: itemsError } = await supabase
       .from("order_items")
       .select("product_id, quantity")
-      .eq("order_id", orderId);
+      .eq("order_id", orderData.id); // Gunakan UUID, bukan order_number
 
-    if (itemsError) throw itemsError;
+    if (itemsError) {
+      console.error("Error getting order items:", itemsError);
+      throw itemsError;
+    }
+
+    if (!orderItems || orderItems.length === 0) {
+      console.log("No order items found");
+      return;
+    }
+
+    console.log("Updating stock for", orderItems.length, "items");
 
     // Update stok untuk setiap produk
     for (const item of orderItems) {
@@ -598,17 +630,30 @@ async function updateProductStock(orderId) {
         .eq("id", item.product_id)
         .single();
 
-      if (productError) continue;
+      if (productError) {
+        console.error("Error getting product:", productError);
+        continue;
+      }
 
       // Hitung stok baru
       const newStock = Math.max(0, product.stock - item.quantity);
 
       // Update stok produk
-      await supabase
+      const { error: updateError } = await supabase
         .from("products")
         .update({ stock: newStock })
         .eq("id", item.product_id);
+
+      if (updateError) {
+        console.error("Error updating stock:", updateError);
+      } else {
+        console.log(
+          `Stock updated for product ${item.product_id}: ${product.stock} -> ${newStock}`
+        );
+      }
     }
+
+    console.log("Product stock update completed");
   } catch (error) {
     console.error("Error updating product stock:", error);
   }
@@ -863,9 +908,31 @@ async function clearCart(userId) {
 // Fungsi untuk menyimpan riwayat pembayaran
 async function savePaymentHistory(orderId, status, paymentResult) {
   try {
-    // Siapkan data riwayat pembayaran
+    console.log("=== FRONTEND: SAVING PAYMENT HISTORY ===");
+    console.log("Order ID (order_number):", orderId);
+
+    // PERBAIKAN: Dapatkan UUID order dari order_number terlebih dahulu
+    const { data: orderData, error: orderError } = await supabase
+      .from("orders")
+      .select("id")
+      .eq("order_number", orderId)
+      .single();
+
+    if (orderError) {
+      console.error("Error getting order UUID:", orderError);
+      throw new Error(`Order tidak ditemukan: ${orderError.message}`);
+    }
+
+    if (!orderData) {
+      console.error("Order not found with order_number:", orderId);
+      throw new Error("Order tidak ditemukan di database");
+    }
+
+    console.log("Order UUID found:", orderData.id);
+
+    // Siapkan data riwayat pembayaran dengan UUID yang benar
     const paymentData = {
-      order_id: orderId,
+      order_id: orderData.id, // Gunakan UUID, bukan order_number
       payment_method: "midtrans",
       amount: paymentResult?.gross_amount || 0,
       status: status,
@@ -873,7 +940,7 @@ async function savePaymentHistory(orderId, status, paymentResult) {
       transaction_id: paymentResult?.transaction_id || orderId,
     };
 
-    console.log("Saving payment history:", paymentData);
+    console.log("Payment history data to insert:", paymentData);
 
     // Simpan riwayat pembayaran ke Supabase
     const { error } = await supabase
@@ -884,11 +951,13 @@ async function savePaymentHistory(orderId, status, paymentResult) {
       console.error("Error saving payment history:", error);
       throw error;
     } else {
-      console.log("Payment history saved successfully");
+      console.log("Payment history saved successfully from frontend");
     }
   } catch (error) {
     console.error("Error saving payment history:", error);
-    throw error;
+    // Jangan throw error untuk menghindari blocking proses checkout
+    // Payment history bisa disimpan lewat webhook callback
+    console.warn("Payment history will be saved via webhook callback instead");
   }
 }
 
