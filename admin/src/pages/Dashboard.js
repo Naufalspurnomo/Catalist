@@ -404,7 +404,7 @@ const Dashboard = () => {
              {" "}
       </div>
             {/* Stats Cards */}     {" "}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6">
                {" "}
         <StatCard
           title="Total Pendapatan"
@@ -448,7 +448,7 @@ const Dashboard = () => {
                                 Grafik Penjualan              {" "}
               </h3>
                            {" "}
-              <div className="flex space-x-2">
+              <div className="flex flex-wrap gap-2">
                                {" "}
                 <button
                   onClick={() => handlePeriodChange("daily")}
@@ -493,7 +493,7 @@ const Dashboard = () => {
                          {" "}
             </div>
                        {" "}
-            <div className="h-64">
+            <div className="h-64 sm:h-72 lg:h-80">
                            {" "}
               {salesData ? (
                 <SalesChart

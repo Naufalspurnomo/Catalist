@@ -36,16 +36,16 @@ const ProductsTable = ({ products, loading, onDelete, onCategoryChange }) => {
         Header: "Produk",
         accessor: "name",
         Cell: ({ row }) => (
-          <div className="flex items-center">
-            <div className="h-10 w-10 flex-shrink-0">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="h-8 w-8 sm:h-10 sm:w-10 flex-shrink-0">
               <img
-                className="h-10 w-10 rounded-md object-cover"
+                className="h-8 w-8 sm:h-10 sm:w-10 rounded-md object-cover"
                 src={row.original.image_url || "https://via.placeholder.com/40"}
                 alt={row.original.name}
               />
             </div>
-            <div className="ml-4">
-              <div className="text-sm font-medium text-gray-900">
+            <div className="min-w-0 flex-1">
+              <div className="text-xs sm:text-sm font-medium text-gray-900 truncate">
                 {row.original.name}
               </div>
             </div>
@@ -88,27 +88,27 @@ const ProductsTable = ({ products, loading, onDelete, onCategoryChange }) => {
         Header: "Aksi",
         accessor: "id",
         Cell: ({ value }) => (
-          <div className="flex space-x-2">
+          <div className="flex gap-2 sm:gap-3">
             <Link
               to={`/products/edit/${value}`}
-              className="text-blue-500 hover:text-blue-700"
+              className="text-blue-500 hover:text-blue-700 transition-colors p-1"
               title="Edit"
             >
-              <FiEdit2 />
+              <FiEdit2 className="w-4 h-4" />
             </Link>
             <button
               onClick={() => onDelete(value)}
-              className="text-red-500 hover:text-red-700"
+              className="text-red-500 hover:text-red-700 transition-colors p-1"
               title="Hapus"
             >
-              <FiTrash2 />
+              <FiTrash2 className="w-4 h-4" />
             </button>
             <Link
               to={`/products/${value}`}
-              className="text-gray-500 hover:text-gray-700"
+              className="text-gray-500 hover:text-gray-700 transition-colors p-1"
               title="Detail"
             >
-              <FiEye />
+              <FiEye className="w-4 h-4" />
             </Link>
           </div>
         ),
@@ -176,10 +176,10 @@ const ProductsTable = ({ products, loading, onDelete, onCategoryChange }) => {
 
   return (
     <div className="bg-white rounded-xl shadow-md overflow-hidden">
-      <div className="p-6 border-b border-gray-200 flex flex-col md:flex-row justify-between items-start md:items-center space-y-4 md:space-y-0">
+      <div className="p-4 sm:p-6 border-b border-gray-200 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
         <h3 className="text-lg font-medium text-gray-900">Daftar Produk</h3>
-        <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2 w-full md:w-auto">
-          <div className="relative">
+        <div className="flex flex-col sm:flex-row gap-2 w-full lg:w-auto">
+          <div className="relative flex-1 sm:flex-none sm:w-64">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
               <FiSearch className="text-gray-400" />
             </div>
@@ -187,12 +187,12 @@ const ProductsTable = ({ products, loading, onDelete, onCategoryChange }) => {
               value={filterInput}
               onChange={handleFilterChange}
               placeholder="Cari produk..."
-              className="form-input pl-10 py-2 w-full sm:w-64"
+              className="form-input pl-10 py-2 w-full"
             />
           </div>
           <select
             onChange={(e) => onCategoryChange(e.target.value)}
-            className="form-input py-2"
+            className="form-input py-2 w-full sm:w-auto max-w-xs"
           >
             <option value="all">Semua Kategori</option>
             {/* Get unique categories */}

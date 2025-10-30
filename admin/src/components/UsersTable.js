@@ -38,23 +38,23 @@ const UsersTable = ({ users, loading, onToggleStatus }) => {
         Header: "Pengguna",
         accessor: "email",
         Cell: ({ row }) => (
-          <div className="flex items-center">
-            <div className="h-10 w-10 flex-shrink-0 bg-gray-200 rounded-full flex items-center justify-center">
+          <div className="flex items-center gap-2 sm:gap-3 md:gap-4">
+            <div className="h-8 w-8 sm:h-10 sm:w-10 flex-shrink-0 bg-gray-200 rounded-full flex items-center justify-center">
               {row.original.avatar_url ? (
                 <img
-                  className="h-10 w-10 rounded-full object-cover"
+                  className="h-8 w-8 sm:h-10 sm:w-10 rounded-full object-cover"
                   src={row.original.avatar_url}
                   alt={row.original.email}
                 />
               ) : (
-                <FiUser className="text-gray-500" />
+                <FiUser className="text-gray-500 text-sm sm:text-base" />
               )}
             </div>
-            <div className="ml-4">
-              <div className="text-sm font-medium text-gray-900">
+            <div className="min-w-0 flex-1">
+              <div className="text-xs sm:text-sm font-medium text-gray-900 truncate">
                 {row.original.display_name || row.original.email || "Unnamed User"}
               </div>
-              <div className="text-sm text-gray-500">{row.original.email}</div>
+              <div className="text-xs sm:text-sm text-gray-500 truncate">{row.original.email}</div>
             </div>
           </div>
         ),
@@ -176,20 +176,18 @@ const UsersTable = ({ users, loading, onToggleStatus }) => {
 
   return (
     <div className="bg-white rounded-xl shadow-md overflow-hidden">
-      <div className="p-6 border-b border-gray-200 flex flex-col md:flex-row justify-between items-start md:items-center space-y-4 md:space-y-0">
+      <div className="p-4 sm:p-6 border-b border-gray-200 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
         <h3 className="text-lg font-medium text-gray-900">Daftar Pengguna</h3>
-        <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2 w-full md:w-auto">
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <FiSearch className="text-gray-400" />
-            </div>
-            <input
-              value={filterInput}
-              onChange={handleFilterChange}
-              placeholder="Cari pengguna..."
-              className="form-input pl-10 py-2 w-full sm:w-64"
-            />
+        <div className="relative flex-1 lg:flex-none lg:w-64 w-full">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <FiSearch className="text-gray-400" />
           </div>
+          <input
+            value={filterInput}
+            onChange={handleFilterChange}
+            placeholder="Cari pengguna..."
+            className="form-input pl-10 py-2 w-full"
+          />
         </div>
       </div>
 
