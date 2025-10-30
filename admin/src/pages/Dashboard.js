@@ -5,6 +5,7 @@ import {
   FiUsers,
   FiPackage,
   FiCalendar,
+  FiAlertTriangle, // Tambahkan ini
 } from "react-icons/fi";
 import supabase from "../lib/supabase";
 import StatCard from "../components/StatCard";
@@ -15,6 +16,7 @@ import RecentOrdersTable from "../components/RecentOrdersTable";
 const Dashboard = () => {
   // State
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null); // <-- TAMBAHKAN
   const [stats, setStats] = useState({
     totalRevenue: 0,
     totalOrders: 0,
@@ -24,15 +26,29 @@ const Dashboard = () => {
   const [recentOrders, setRecentOrders] = useState([]);
   const [salesData, setSalesData] = useState(null);
   const [orderStatusData, setOrderStatusData] = useState(null);
-  const [period, setPeriod] = useState("weekly"); // daily, weekly, monthly
+  const [period, setPeriod] = useState("weekly"); // daily, weekly, monthly // Fetch dashboard data
 
-  // Fetch dashboard data
   useEffect(() => {
-    const fetchDashboardData = async () => {
+    // BUAT FUNGSI WRAPPER UNTUK CEK AUTH
+    const checkAuthAndFetch = async () => {
       try {
         setLoading(true);
+        setError(null); // Reset error
 
-        // Fetch stats
+        // 1. CEK SESI DULU
+        const {
+          data: { session },
+          error: sessionError,
+        } = await supabase.auth.getSession();
+
+        if (sessionError || !session) {
+          console.warn("No session, user logged out.");
+          setLoading(false);
+          setError("Sesi tidak ditemukan. Silakan login kembali.");
+          return; // Stop
+        } // 2. SESI VALID, LANJUTKAN FETCH
+
+        console.log("Session valid, fetching dashboard data...");
         await Promise.all([
           fetchStats(),
           fetchRecentOrders(),
@@ -41,15 +57,15 @@ const Dashboard = () => {
         ]);
       } catch (error) {
         console.error("Error fetching dashboard data:", error);
+        setError(error.message); // Tampilkan RLS error jika ada
       } finally {
         setLoading(false);
       }
     };
 
-    fetchDashboardData();
-  }, [period]);
+    checkAuthAndFetch();
+  }, [period]); // Fetch stats
 
-  // Fetch stats
   const fetchStats = async () => {
     try {
       // Total revenue
@@ -63,23 +79,20 @@ const Dashboard = () => {
       const totalRevenue = revenueData.reduce(
         (sum, order) => sum + order.total_amount,
         0
-      );
+      ); // Total orders
 
-      // Total orders
       const { count: totalOrders, error: ordersError } = await supabase
         .from("orders")
         .select("id", { count: "exact" });
 
-      if (ordersError) throw ordersError;
+      if (ordersError) throw ordersError; // Total customers
 
-      // Total customers
       const { count: totalCustomers, error: customersError } = await supabase
         .from("profiles")
         .select("id", { count: "exact" });
 
-      if (customersError) throw customersError;
+      if (customersError) throw customersError; // Total products
 
-      // Total products
       const { count: totalProducts, error: productsError } = await supabase
         .from("products")
         .select("id", { count: "exact" });
@@ -94,37 +107,41 @@ const Dashboard = () => {
       });
     } catch (error) {
       console.error("Error fetching stats:", error);
+      // Lempar error agar ditangkap oleh Promise.all
+      throw new Error(`Error fetching stats: ${error.message}`);
     }
-  };
+  }; // Fetch recent orders
 
-  // Fetch recent orders
   const fetchRecentOrders = async () => {
     try {
       const { data, error } = await supabase
         .from("orders")
         .select(
           `
-        id,
-        order_number,
-        user_id,
-        status,
-        total_amount,
-        created_at,
-        profiles(display_name, email)
-      `
+        id,
+        order_number,
+        user_id,
+        status,
+        total_amount,
+        created_at,
+        profiles(display_name, email)
+      `
         )
         .order("created_at", { ascending: false })
         .limit(5);
 
       if (error) throw error;
 
-      // Cari orders yang tidak punya relasi profiles
+      if (!data) {
+        setRecentOrders([]);
+        return;
+      } // Cari orders yang tidak punya relasi profiles
+
       const missing = data.filter((o) => !o.profiles);
       const missingUserIds = [
         ...new Set(missing.map((o) => o.user_id).filter(Boolean)),
-      ];
+      ]; // Ambil profil fallback berdasarkan user_id
 
-      // Ambil profil fallback berdasarkan user_id
       let profilesById = {};
       if (missingUserIds.length > 0) {
         const { data: fallbackProfiles, error: fallbackError } = await supabase
@@ -140,9 +157,8 @@ const Dashboard = () => {
             return acc;
           }, {});
         }
-      }
+      } // Transform data
 
-      // Transform data
       const transformedData = data.map((order) => {
         const relProfile = order.profiles ?? null;
         const fallbackProfile = relProfile
@@ -161,34 +177,30 @@ const Dashboard = () => {
       setRecentOrders(transformedData);
     } catch (error) {
       console.error("Error fetching recent orders:", error);
+      throw new Error(`Error fetching recent orders: ${error.message}`);
     }
-  };
+  }; // Fetch sales data
 
-  // Fetch sales data
   const fetchSalesData = async (period) => {
     try {
       let query = supabase
         .from("orders")
         .select("created_at, total_amount")
-        .eq("status", "completed");
+        .eq("status", "completed"); // Get date range based on period
 
-      // Get date range based on period
       const now = new Date();
       let startDate;
 
       switch (period) {
-        case "daily":
-          // Last 7 days
+        case "daily": // Last 7 days
           startDate = new Date(now);
           startDate.setDate(now.getDate() - 7);
           break;
-        case "weekly":
-          // Last 8 weeks
+        case "weekly": // Last 8 weeks
           startDate = new Date(now);
           startDate.setDate(now.getDate() - 56); // 8 weeks * 7 days
           break;
-        case "monthly":
-          // Last 6 months
+        case "monthly": // Last 6 months
           startDate = new Date(now);
           startDate.setMonth(now.getMonth() - 6);
           break;
@@ -203,16 +215,21 @@ const Dashboard = () => {
 
       if (error) throw error;
 
-      // Process data based on period
+      if (!data || data.length === 0) {
+        setSalesData(null); // Set null jika tidak ada data
+        return;
+      } // Process data based on period
+
       const processedData = processChartData(data, period);
       setSalesData(processedData);
     } catch (error) {
       console.error("Error fetching sales data:", error);
+      throw new Error(`Error fetching sales data: ${error.message}`);
     }
-  };
+  }; // Process chart data
 
-  // Process chart data
   const processChartData = (data, period) => {
+    // ... (fungsi ini tidak perlu diubah) ...
     // Group data by period
     const groupedData = {};
 
@@ -221,20 +238,17 @@ const Dashboard = () => {
       let key;
 
       switch (period) {
-        case "daily":
-          // Format: "Jan 1"
+        case "daily": // Format: "Jan 1"
           key = date.toLocaleDateString("id-ID", {
             month: "short",
             day: "numeric",
           });
           break;
-        case "weekly":
-          // Get week number and year
+        case "weekly": // Get week number and year
           const weekNumber = getWeekNumber(date);
           key = `W${weekNumber}`;
           break;
-        case "monthly":
-          // Format: "Jan 2023"
+        case "monthly": // Format: "Jan 2023"
           key = date.toLocaleDateString("id-ID", {
             month: "short",
             year: "numeric",
@@ -252,22 +266,27 @@ const Dashboard = () => {
       }
 
       groupedData[key] += order.total_amount;
-    });
+    }); // Sort keys based on period
 
-    // Sort keys based on period
     const sortedKeys = Object.keys(groupedData).sort((a, b) => {
       if (period === "weekly") {
         // Sort by week number
         return parseInt(a.substring(1)) - parseInt(b.substring(1));
+      } // For daily and monthly, convert to date and sort // Perlu logika parsing yang lebih baik untuk "Jan 1" atau "Jan 2023"
+
+      // Untuk saat ini, kita biarkan, tapi idealnya ini perlu perbaikan
+      try {
+        const dateA = new Date(a);
+        const dateB = new Date(b);
+        if (!isNaN(dateA) && !isNaN(dateB)) {
+          return dateA - dateB;
+        }
+      } catch (e) {
+        // fallback to string sort
       }
+      return a.localeCompare(b);
+    }); // Prepare chart data
 
-      // For daily and monthly, convert to date and sort
-      const dateA = new Date(a);
-      const dateB = new Date(b);
-      return dateA - dateB;
-    });
-
-    // Prepare chart data
     return {
       labels: sortedKeys,
       datasets: [
@@ -281,23 +300,26 @@ const Dashboard = () => {
         },
       ],
     };
-  };
+  }; // Get week number
 
-  // Get week number
   const getWeekNumber = (date) => {
+    // ... (fungsi ini tidak perlu diubah) ...
     const firstDayOfYear = new Date(date.getFullYear(), 0, 1);
     const pastDaysOfYear = (date - firstDayOfYear) / 86400000;
     return Math.ceil((pastDaysOfYear + firstDayOfYear.getDay() + 1) / 7);
-  };
+  }; // Fetch order status data
 
-  // Fetch order status data
   const fetchOrderStatusData = async () => {
     try {
       const { data, error } = await supabase.from("orders").select("status");
 
       if (error) throw error;
 
-      // Count orders by status
+      if (!data || data.length === 0) {
+        setOrderStatusData(null); // Set null jika tidak ada data
+        return;
+      } // Count orders by status
+
       const statusCounts = {
         pending: 0,
         processing: 0,
@@ -310,9 +332,8 @@ const Dashboard = () => {
         if (statusCounts.hasOwnProperty(order.status)) {
           statusCounts[order.status]++;
         }
-      });
+      }); // Prepare chart data
 
-      // Prepare chart data
       setOrderStatusData({
         labels: [
           "Menunggu",
@@ -343,69 +364,92 @@ const Dashboard = () => {
       });
     } catch (error) {
       console.error("Error fetching order status data:", error);
+      throw new Error(`Error fetching order status data: ${error.message}`);
     }
-  };
+  }; // Format currency
 
-  // Format currency
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat("id-ID", {
       style: "currency",
       currency: "IDR",
       minimumFractionDigits: 0,
     }).format(amount);
-  };
+  }; // Handle period change
 
-  // Handle period change
   const handlePeriodChange = (newPeriod) => {
     setPeriod(newPeriod);
   };
 
+  // Tampilkan error jika ada
+  if (error) {
+    return (
+      <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-6">
+        <div className="flex items-center">
+          <FiAlertTriangle className="text-red-500 mr-3" />
+          <p className="text-sm text-red-700">{error}</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div>
+      {/* ... sisa JSX ... */}     {" "}
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
+                <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1> 
+             {" "}
         <p className="text-gray-500">
-          Ringkasan statistik dan performa toko Anda
+                    Ringkasan statistik dan performa toko Anda        {" "}
         </p>
+             {" "}
       </div>
-
-      {/* Stats Cards */}
+            {/* Stats Cards */}     {" "}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+               {" "}
         <StatCard
           title="Total Pendapatan"
           value={formatCurrency(stats.totalRevenue)}
           icon={<FiDollarSign className="text-primary" size={20} />}
           loading={loading}
         />
+               {" "}
         <StatCard
           title="Total Pesanan"
           value={stats.totalOrders}
           icon={<FiShoppingBag className="text-blue-500" size={20} />}
           loading={loading}
         />
+               {" "}
         <StatCard
           title="Total Pelanggan"
           value={stats.totalCustomers}
           icon={<FiUsers className="text-purple-500" size={20} />}
           loading={loading}
         />
+               {" "}
         <StatCard
           title="Total Produk"
           value={stats.totalProducts}
           icon={<FiPackage className="text-green-500" size={20} />}
           loading={loading}
         />
+             {" "}
       </div>
-
-      {/* Charts */}
+            {/* Charts */}     {" "}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+               {" "}
         <div className="lg:col-span-2">
+                   {" "}
           <div className="bg-white rounded-xl shadow-md p-6">
+                       {" "}
             <div className="flex items-center justify-between mb-4">
+                           {" "}
               <h3 className="text-lg font-medium text-gray-900">
-                Grafik Penjualan
+                                Grafik Penjualan              {" "}
               </h3>
+                           {" "}
               <div className="flex space-x-2">
+                               {" "}
                 <button
                   onClick={() => handlePeriodChange("daily")}
                   className={`px-3 py-1 text-xs rounded-md ${
@@ -414,9 +458,11 @@ const Dashboard = () => {
                       : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                   }`}
                 >
-                  <FiCalendar className="inline mr-1" size={12} />
-                  Harian
+                                   {" "}
+                  <FiCalendar className="inline mr-1" size={12} />             
+                      Harian                {" "}
                 </button>
+                               {" "}
                 <button
                   onClick={() => handlePeriodChange("weekly")}
                   className={`px-3 py-1 text-xs rounded-md ${
@@ -425,9 +471,11 @@ const Dashboard = () => {
                       : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                   }`}
                 >
-                  <FiCalendar className="inline mr-1" size={12} />
-                  Mingguan
+                                   {" "}
+                  <FiCalendar className="inline mr-1" size={12} />             
+                      Mingguan                {" "}
                 </button>
+                               {" "}
                 <button
                   onClick={() => handlePeriodChange("monthly")}
                   className={`px-3 py-1 text-xs rounded-md ${
@@ -436,12 +484,17 @@ const Dashboard = () => {
                       : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                   }`}
                 >
-                  <FiCalendar className="inline mr-1" size={12} />
-                  Bulanan
+                                   {" "}
+                  <FiCalendar className="inline mr-1" size={12} />             
+                      Bulanan                {" "}
                 </button>
+                             {" "}
               </div>
+                         {" "}
             </div>
+                       {" "}
             <div className="h-64">
+                           {" "}
               {salesData ? (
                 <SalesChart
                   data={salesData}
@@ -450,28 +503,39 @@ const Dashboard = () => {
                 />
               ) : (
                 <div className="h-full flex items-center justify-center">
-                  <p className="text-gray-400">Tidak ada data penjualan</p>
+                                   {" "}
+                  <p className="text-gray-400">Tidak ada data penjualan</p>     
+                           {" "}
                 </div>
               )}
+                         {" "}
             </div>
+                     {" "}
           </div>
+                 {" "}
         </div>
-
+               {" "}
         <div>
+                   {" "}
           {orderStatusData ? (
             <OrderStatusChart data={orderStatusData} loading={loading} />
           ) : (
             <div className="bg-white rounded-xl shadow-md p-6 h-full flex items-center justify-center">
-              <p className="text-gray-400">Tidak ada data status pesanan</p>
+                           {" "}
+              <p className="text-gray-400">Tidak ada data status pesanan</p>   
+                     {" "}
             </div>
           )}
+                 {" "}
         </div>
+             {" "}
       </div>
-
-      {/* Recent Orders */}
+            {/* Recent Orders */}     {" "}
       <div className="mb-6">
-        <RecentOrdersTable orders={recentOrders} loading={loading} />
+                <RecentOrdersTable orders={recentOrders} loading={loading} />   
+         {" "}
       </div>
+         {" "}
     </div>
   );
 };
