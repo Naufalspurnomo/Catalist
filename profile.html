@@ -148,6 +148,47 @@
       .animate-fadeIn {
         animation: fadeIn 0.5s ease forwards;
       }
+
+      .timeline {
+        position: relative;
+        padding-left: 2.5rem;
+      }
+      .timeline-item {
+        position: relative;
+        padding-bottom: 1.5rem;
+      }
+      .timeline-item:last-child {
+        padding-bottom: 0;
+      }
+      .timeline-item::before {
+        content: "";
+        position: absolute;
+        left: 0;
+        top: 0.5rem;
+        bottom: -0.5rem;
+        width: 2px;
+        background-color: var(--gray-200);
+      }
+      .timeline-item:last-child::before {
+        height: 0.5rem; /* Hanya sampai dot */
+        bottom: auto;
+      }
+      .timeline-dot {
+        position: absolute;
+        left: -0.4rem; /* (8px - 2px) / 2 */
+        top: 0.375rem; /* 6px */
+        height: 0.8rem; /* 14px */
+        width: 0.8rem; /* 14px */
+        border-radius: 9999px;
+        background-color: var(--gray-300);
+        border: 2px solid var(--light);
+      }
+      .timeline-item-active .timeline-dot {
+        background-color: var(--secondary);
+      }
+      .timeline-item-active::before {
+        background-color: var(--secondary);
+      }
     </style>
   </head>
   <body class="bg-gray-50 font-sans text-gray-800" id="profile-page">
@@ -424,10 +465,10 @@
                               <option value="date-desc">Date (Newest)</option>
                               <option value="date-asc">Date (Oldest)</option>
                               <option value="amount-desc">
-                                Amount (High to Low)
+                                Amount (Low to High)
                               </option>
                               <option value="amount-asc">
-                                Amount (Low to High)
+                                Amount (High to Low)
                               </option>
                             </select>
                           </div>
@@ -667,7 +708,32 @@
         </form>
       </div>
     </div>
+    <div
+      id="order-detail-modal"
+      class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 hidden"
+    >
+      <div
+        class="bg-white rounded-2xl p-6 md:p-8 max-w-3xl w-full max-h-[90vh] overflow-y-auto"
+      >
+        <div class="flex justify-between items-center mb-6">
+          <h2 class="text-xl font-bold">
+            Detail Pesanan
+            <span
+              id="modal-order-number"
+              class="text-purple-600 ml-2 font-mono"
+            ></span>
+          </h2>
+          <button
+            id="close-detail-modal"
+            class="text-gray-500 hover:text-gray-700"
+          >
+            <i data-feather="x"></i>
+          </button>
+        </div>
 
+        <div id="modal-order-content" class="space-y-6"></div>
+      </div>
+    </div>
     <footer class="bg-gray-900 text-white py-12">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
@@ -779,317 +845,530 @@
       </div>
     </footer>
 
-<script>
-        // Inisialisasi Supabase client
-        const supabaseUrl = 'https://anzsbqqippijhemwxkqh.supabase.co';
-        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFuenNicXFpcHBpamhlbXd4a3FoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEyMDM1MTQsImV4cCI6MjA3Njc3OTUxNH0.6l1Bt9_5_5ohFeH8IN6mP9jU0pFUToHMmV1NwQEeP-Q';
-        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+    <script>
+      // Inisialisasi Supabase client
+      const supabaseUrl = "https://anzsbqqippijhemwxkqh.supabase.co";
+      const supabaseKey =
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFuenNicXFpcHBpamhlbXd4a3FoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEyMDM1MTQsImV4cCI6MjA3Njc3OTUxNH0.6l1Bt9_5_5ohFeH8IN6mP9jU0pFUToHMmV1NwQEeP-Q";
+      const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
-        // Inisialisasi Feather Icons
-        document.addEventListener('DOMContentLoaded', function() {
-            feather.replace();
-            AOS.init();
-            
-            // Toggle mobile menu
-            document.getElementById('menu-toggle').addEventListener('click', function() {
-                document.getElementById('mobile-menu').classList.toggle('hidden');
-            });
-            
-            // Edit profile modal
-            const editProfileBtn = document.getElementById('edit-profile-btn');
-            const editProfileModal = document.getElementById('edit-profile-modal');
-            const closeModalBtn = document.getElementById('close-modal');
-            
-            if (editProfileBtn) {
-                editProfileBtn.addEventListener('click', function() {
-                    editProfileModal.classList.remove('hidden');
-                });
-            }
-            if (closeModalBtn) {
-                closeModalBtn.addEventListener('click', function() {
-                    editProfileModal.classList.add('hidden');
-                });
-            }
-            
-            // Close modal when clicking outside
-            window.addEventListener('click', function(event) {
-                if (event.target === editProfileModal) {
-                    editProfileModal.classList.add('hidden');
-                }
-            });
-            
-            // Profile form submission
-            const profileForm = document.getElementById('profile-form');
-            if (profileForm) {
-                profileForm.addEventListener('submit', async function(e) {
-                    e.preventDefault();
-                    
-                    const displayName = document.getElementById('display-name').value.trim();
-                    const phone = document.getElementById('phone').value.trim();
-                    const bio = document.getElementById('bio').value.trim();
-                    const location = document.getElementById('location').value.trim();
-                    
-                    if (!displayName) {
-                        alert('Nama tidak boleh kosong');
-                        return;
-                    }
-                    
-                    // Validasi nomor HP jika diisi
-                    if (phone && !/^[0-9]{10,15}$/.test(phone)) {
-                        alert('Format nomor HP tidak valid');
-                        return;
-                    }
-                    
-                    // Tampilkan indikator loading
-                    const submitBtn = document.getElementById('save-profile-btn');
-                    const originalBtnText = submitBtn.innerHTML;
-                    submitBtn.innerHTML = '<svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Menyimpan...';
-                    submitBtn.disabled = true;
-                    
-                    try {
-                        const { data: { user }, error: userError } = await supabase.auth.getUser();
-                        
-                        if (userError || !user) {
-                            console.error('Error getting user:', userError);
-                            alert('Sesi Anda berakhir, silakan login kembali.');
-                            return;
-                        }
-                        
-                        // Update user metadata di auth
-                        const { error: authError } = await supabase.auth.updateUser({
-                            data: { 
-                                display_name: displayName,
-                                phone: phone || null,
-                                bio: bio || null,
-                                location: location || null
-                            }
-                        });
-                        
-                        if (authError) {
-                            console.error('Error updating auth profile:', authError);
-                            alert('Gagal memperbarui data auth.');
-                            return;
-                        }
-                        
-                        // Update atau insert data di tabel profiles
-                        const { error: profileError } = await supabase
-                            .from('profiles')
-                            .upsert({ 
-                                id: user.id,
-                                display_name: displayName,
-                                phone: phone || null,
-                                bio: bio || null,
-                                location: location || null,
-                                updated_at: new Date().toISOString()
-                            });
-                        
-                        if (profileError) {
-                            console.error('Error updating profile in database:', profileError);
-                            // Tetap lanjutkan karena auth sudah diupdate
-                        }
-                        
-                        // Update UI
-                        document.getElementById('profile-name').textContent = displayName;
-                        document.getElementById('profile-phone').textContent = phone || '-';
-                        document.getElementById('profile-location').textContent = location || '-';
-                        document.getElementById('profile-bio').textContent = bio || 'Belum ada informasi bio.';
-                        
-                        // Tampilkan notifikasi sukses
-                        const notification = document.createElement('div');
-                        notification.className = 'fixed bottom-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg transition-opacity duration-300';
-                        notification.textContent = 'Profil berhasil diperbarui';
-                        document.body.appendChild(notification);
-                        
-                        // Hilangkan notifikasi setelah 3 detik
-                        setTimeout(() => {
-                            notification.style.opacity = '0';
-                            setTimeout(() => {
-                                document.body.removeChild(notification);
-                            }, 300);
-                        }, 3000);
-                        
-                        // Close modal
-                        editProfileModal.classList.add('hidden');
-                        
-                    } catch (error) {
-                        console.error('Error in profile update:', error);
-                        alert('Terjadi kesalahan saat memperbarui profil');
-                    } finally {
-                        // Kembalikan tombol ke keadaan semula
-                        submitBtn.innerHTML = originalBtnText;
-                        submitBtn.disabled = false;
-                    }
-                });
-            }
-            
-            // Load user profile (dan riwayat aktivitas)
-            loadUserProfile();
+      // Inisialisasi Feather Icons
+      document.addEventListener("DOMContentLoaded", function () {
+        feather.replace();
+        AOS.init();
+
+        // Toggle mobile menu
+        document
+          .getElementById("menu-toggle")
+          .addEventListener("click", function () {
+            document.getElementById("mobile-menu").classList.toggle("hidden");
+          });
+
+        // Edit profile modal
+        const editProfileBtn = document.getElementById("edit-profile-btn");
+        const editProfileModal = document.getElementById("edit-profile-modal");
+        const closeModalBtn = document.getElementById("close-modal");
+
+        if (editProfileBtn) {
+          editProfileBtn.addEventListener("click", function () {
+            editProfileModal.classList.remove("hidden");
+          });
+        }
+        if (closeModalBtn) {
+          closeModalBtn.addEventListener("click", function () {
+            editProfileModal.classList.add("hidden");
+          });
+        }
+        const detailModal = document.getElementById("order-detail-modal");
+        const closeDetailModalBtn =
+          document.getElementById("close-detail-modal");
+
+        if (closeDetailModalBtn) {
+          closeDetailModalBtn.addEventListener("click", function () {
+            detailModal.classList.add("hidden");
+          });
+        }
+        // Close modal when clicking outside
+        window.addEventListener("click", function (event) {
+          if (event.target === editProfileModal) {
+            editProfileModal.classList.add("hidden");
+          }
+          // TAMBAHKAN INI:
+          if (event.target === detailModal) {
+            detailModal.classList.add("hidden");
+          }
         });
 
-        // Fungsi untuk memeriksa status autentikasi dan mengambil data profil
-        async function loadUserProfile() {
-            try {
-                // Cek session pengguna
-                const { data: { session }, error } = await supabase.auth.getSession();
-                
-                if (error) {
-                    console.error('Error checking auth status:', error);
-                    window.location.href = 'login.html';
-                    return;
-                }
-                
-                if (!session) {
-                    // Redirect ke login jika tidak ada session
-                    console.log('No session, redirecting to login.');
-                    window.location.href = 'login.html';
-                    return;
-                }
-                
-                const user = session.user;
-                
-                // Ambil data profil dari database Supabase
-                const { data: profileData, error: profileError } = await supabase
-                    .from('profiles')
-                    .select('*')
-                    .eq('id', user.id)
-                    .single();
-                
-                if (profileError && profileError.code !== 'PGRST116') { // PGRST116 = baris tidak ditemukan
-                    console.error('Error fetching profile data:', profileError);
-                    // Tetap lanjutkan dengan data dari auth
-                }
-                
-                // Gunakan data dari tabel profiles jika ada, jika tidak gunakan dari auth
-                const displayName = profileData?.display_name || user.user_metadata?.display_name || user.email;
-                const phone = profileData?.phone || user.user_metadata?.phone || '';
-                const bio = profileData?.bio || user.user_metadata?.bio || '';
-                const location = profileData?.location || user.user_metadata?.location || '';
-                
-                // Update UI dengan data pengguna
-                document.getElementById('profile-email').textContent = user.email;
-                document.getElementById('profile-name').textContent = displayName;
-                
-                // Format tanggal
-                const createdAt = new Date(user.created_at);
-                const lastSignIn = new Date(user.last_sign_in_at || user.created_at);
-                
-                document.getElementById('member-since').textContent = createdAt.toLocaleDateString('id-ID', {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric'
-                });
-                
-                document.getElementById('last-login').textContent = lastSignIn.toLocaleString('id-ID', {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit'
-                });
-                
-                // Update informasi personal
-                document.getElementById('profile-phone').textContent = phone || '-';
-                document.getElementById('profile-location').textContent = location || '-';
-                document.getElementById('profile-bio').textContent = bio || 'Belum ada informasi bio.';
-                
-                // Set nilai form
-                document.getElementById('display-name').value = displayName;
-                document.getElementById('phone').value = phone;
-                document.getElementById('bio').value = bio;
-                document.getElementById('location').value = location;
-                
-                // Tampilkan profil pengguna di navbar
-                showUserProfile(user);
-                
-                // Load purchase history
-                loadPurchaseHistory(user.id);
-                
-            } catch (error) {
-                console.error('Error loading profile:', error);
-                // window.location.href = 'login.html'; // Matikan ini agar tidak redirect loop jika ada error
+        // Profile form submission
+        const profileForm = document.getElementById("profile-form");
+        if (profileForm) {
+          profileForm.addEventListener("submit", async function (e) {
+            e.preventDefault();
+
+            const displayName = document
+              .getElementById("display-name")
+              .value.trim();
+            const phone = document.getElementById("phone").value.trim();
+            const bio = document.getElementById("bio").value.trim();
+            const location = document.getElementById("location").value.trim();
+
+            if (!displayName) {
+              alert("Nama tidak boleh kosong");
+              return;
             }
-        }
-        
-        // Variabel global untuk menyimpan data order dan state pagination
-        let allOrders = [];
-        let filteredOrders = [];
-        let currentPage = 1;
-        let itemsPerPage = 5;
-        let currentUserId = null;
-        let currentSortField = 'date';
-        let currentSortDirection = 'desc';
-        let currentFilters = {
-            status: 'all',
-            dateRange: 'all',
-            search: ''
-        };
-        
-        // Fungsi untuk mengambil dan menampilkan riwayat pembelian
-        async function loadPurchaseHistory(userId, limit = 5) {
+
+            // Validasi nomor HP jika diisi
+            if (phone && !/^[0-9]{10,15}$/.test(phone)) {
+              alert("Format nomor HP tidak valid");
+              return;
+            }
+
+            // Tampilkan indikator loading
+            const submitBtn = document.getElementById("save-profile-btn");
+            const originalBtnText = submitBtn.innerHTML;
+            submitBtn.innerHTML =
+              '<svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Menyimpan...';
+            submitBtn.disabled = true;
+
             try {
-                console.log('=== LOADING PURCHASE HISTORY ===');
-                console.log('User ID:', userId);
+              const {
+                data: { user },
+                error: userError,
+              } = await supabase.auth.getUser();
+
+              if (userError || !user) {
+                console.error("Error getting user:", userError);
+                alert("Sesi Anda berakhir, silakan login kembali.");
+                return;
+              }
+
+              // Update user metadata di auth
+              const { error: authError } = await supabase.auth.updateUser({
+                data: {
+                  display_name: displayName,
+                  phone: phone || null,
+                  bio: bio || null,
+                  location: location || null,
+                },
+              });
+
+              if (authError) {
+                console.error("Error updating auth profile:", authError);
+                alert("Gagal memperbarui data auth.");
+                return;
+              }
+
+              // Update atau insert data di tabel profiles
+              const { error: profileError } = await supabase
+                .from("profiles")
+                .upsert({
+                  id: user.id,
+                  display_name: displayName,
+                  phone: phone || null,
+                  bio: bio || null,
+                  location: location || null,
+                  updated_at: new Date().toISOString(),
+                });
+
+              if (profileError) {
+                console.error(
+                  "Error updating profile in database:",
+                  profileError
+                );
+                // Tetap lanjutkan karena auth sudah diupdate
+              }
+
+              // Update UI
+              document.getElementById("profile-name").textContent = displayName;
+              document.getElementById("profile-phone").textContent =
+                phone || "-";
+              document.getElementById("profile-location").textContent =
+                location || "-";
+              document.getElementById("profile-bio").textContent =
+                bio || "Belum ada informasi bio.";
+
+              // Tampilkan notifikasi sukses
+              const notification = document.createElement("div");
+              notification.className =
+                "fixed bottom-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg transition-opacity duration-300";
+              notification.textContent = "Profil berhasil diperbarui";
+              document.body.appendChild(notification);
+
+              // Hilangkan notifikasi setelah 3 detik
+              setTimeout(() => {
+                notification.style.opacity = "0";
+                setTimeout(() => {
+                  document.body.removeChild(notification);
+                }, 300);
+              }, 3000);
+
+              // Close modal
+              editProfileModal.classList.add("hidden");
+            } catch (error) {
+              console.error("Error in profile update:", error);
+              alert("Terjadi kesalahan saat memperbarui profil");
+            } finally {
+              // Kembalikan tombol ke keadaan semula
+              submitBtn.innerHTML = originalBtnText;
+              submitBtn.disabled = false;
+            }
+          });
+        }
+
+        // Load user profile (dan riwayat aktivitas)
+        loadUserProfile();
+      });
+      /**
+       * Membuat HTML untuk timeline status pengiriman
+       */
+      function generateShippingTimeline(history) {
+        if (!history || history.length === 0) {
+          return '<p class="text-sm text-gray-500">Tidak ada riwayat status ditemukan.</p>';
+        }
+
+        // Balikkan array agar yang terbaru di atas
+        const sortedHistory = [...history].reverse();
+
+        return `<ul class="timeline">
+            ${sortedHistory
+              .map((item, index) => {
+                const itemDate = new Date(item.created_at);
+                const formattedDate = itemDate.toLocaleString("id-ID", {
+                  day: "numeric",
+                  month: "short",
+                  year: "numeric",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                });
+
+                // Beri style 'active' untuk item terbaru (index 0)
+                const isActive = index === 0;
+
+                return `
+                <li class="timeline-item ${
+                  isActive ? "timeline-item-active" : ""
+                }">
+                    <div class="timeline-dot"></div>
+                    <div class="pl-4">
+                        <p class="text-sm font-semibold text-gray-900">${getStatusBadge(
+                          item.status
+                        )}</p>
+                        <p class="text-xs text-gray-500 mb-1">${formattedDate}</p>
+                        ${
+                          item.shipping_details?.notes
+                            ? `<p class="text-sm text-gray-700">${item.shipping_details.notes}</p>`
+                            : ""
+                        }
+                        ${
+                          item.tracking_number
+                            ? `<p class="text-sm text-gray-700">No. Resi: <span class="font-medium text-purple-600">${item.tracking_number}</span></p>`
+                            : ""
+                        }
+                    </div>
+                </li>
+                `;
+              })
+              .join("")}
+        </ul>`;
+      }
+
+      /**
+       * Membuat HTML lengkap untuk konten modal detail pesanan
+       */
+      function generateModalContent(order) {
+        // 1. Generate Daftar Item
+        const itemsHtml =
+          order.items.length > 0
+            ? order.items
+                .map(
+                  (item) => `
+                <div class="flex items-center py-2 border-b border-gray-100 last:border-b-0">
+                    <div class="w-12 h-12 flex-shrink-0 mr-3 bg-gray-100 rounded-md overflow-hidden">
+                        <img src="${
+                          item.products?.image_url ||
+                          "https://via.placeholder.com/48"
+                        }" alt="${
+                    item.products?.name
+                  }" class="w-full h-full object-cover">
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-sm font-medium text-gray-900 truncate">${
+                          item.products?.name || "Product"
+                        }</p>
+                        <p class="text-xs text-gray-500">${
+                          item.products?.category || "Category"
+                        }</p>
+                    </div>
+                    <div class="text-right ml-2">
+                        <p class="text-sm font-medium text-gray-900">Rp ${formatPrice(
+                          item.price
+                        )} x ${item.quantity}</p>
+                        <p class="text-xs font-bold text-purple-600">Rp ${formatPrice(
+                          item.subtotal
+                        )}</p>
+                    </div>
+                </div>
+            `
+                )
+                .join("")
+            : '<p class="text-sm text-gray-500 py-2">Tidak ada detail item.</p>';
+
+        // 2. Generate Timeline Pengiriman
+        const timelineHtml = generateShippingTimeline(order.shipping_history);
+
+        // 3. Generate Info Pengiriman (Alamat)
+        const shippingHtml = order.shipping
+          ? `
+                <p class="text-sm"><span class="font-medium">Nama:</span> ${
+                  order.shipping.fullname || "-"
+                }</p>
+                <p class="text-sm"><span class="font-medium">Alamat:</span> ${
+                  order.shipping.address || "-"
+                }</p>
+                <p class="text-sm"><span class="font-medium">Kota:</span> ${
+                  order.shipping.city || "-"
+                }, ${order.shipping.province || "-"}</p>
+                <p class="text-sm"><span class="font-medium">Kode Pos:</span> ${
+                  order.shipping.postalCode || "-"
+                }</p>
+                <p class="text-sm"><span class="font-medium">HP:</span> ${
+                  order.shipping.phone || "-"
+                }</p>
+              `
+          : '<p class="text-sm text-gray-500">Tidak ada detail pengiriman.</p>';
+
+        // 4. Generate Info Pembayaran
+        const paymentHtml = order.payment
+          ? `
+                <p class="text-sm"><span class="font-medium">Metode:</span> ${
+                  order.payment.payment_method || order.payment_method || "-"
+                }</p>
+                <p class="text-sm"><span class="font-medium">Status:</span> ${getStatusBadge(
+                  order.payment.status
+                )}</p>
+                <p class="text-sm"><span class="font-medium">ID Transaksi:</span> ${
+                  order.payment.transaction_id || "-"
+                }</p>
+              `
+          : '<p class="text-sm text-gray-500">Tidak ada detail pembayaran.</p>';
+        return `
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div class="bg-gray-50 p-4 rounded-lg">
+                <h4 class="font-semibold text-gray-800 mb-3">Riwayat Status</h4>
+                <div class="bg-white p-3 rounded-lg shadow-sm max-h-64 overflow-y-auto pr-2">
+                  ${timelineHtml}
+                  </div>
+                  </div>
                 
-                // Tampilkan loading
-                document.getElementById('activity-loading').classList.remove('hidden');
-                document.getElementById('activity-empty').classList.add('hidden');
-                document.getElementById('activity-content').classList.add('hidden');
+                <div class="bg-gray-50 p-4 rounded-lg">
+                    <h4 class="font-semibold text-gray-800 mb-2">Detail Item</h4>
+                    <div class="bg-white p-3 rounded-lg shadow-sm max-h-64 overflow-y-auto">
+                        ${itemsHtml}
+                    </div>
+                </div>
                 
-                currentUserId = userId;
+                <div class="bg-gray-50 p-4 rounded-lg">
+                    <h4 class="font-semibold text-gray-800 mb-2">Informasi Pengiriman</h4>
+                    <div class="bg-white p-3 rounded-lg shadow-sm space-y-1">
+                        ${shippingHtml}
+                    </div>
+                </div>
                 
-                // Ambil data order dari user
-                console.log('Fetching orders for user:', userId);
-                const { data: orders, error: ordersError } = await supabase
-                    .from('orders')
-                    .select('id, order_number, status, total_amount, created_at, shipping_address, payment_method')
-                    .eq('user_id', userId)
-                    .order('created_at', { ascending: false })
-                    .limit(limit);
-                
-                console.log('Orders query result:', { orders, ordersError });
-                
-                if (ordersError) {
-                    console.error('Error fetching orders:', ordersError);
-                    document.getElementById('activity-loading').classList.add('hidden');
-                    document.getElementById('activity-empty').classList.remove('hidden');
-                    return;
-                }
-                
-                // ============================================================
-                // PERUBAHAN: Mematikan Data Dummy
-                // ============================================================
-                if (!orders || orders.length === 0) {
-                    console.log('No orders found for user:', userId);
-                    const showDummyData = false; // <<< DIPASTIKAN FALSE
-                    
-                    if (showDummyData) {
-                        // ... (kode data dummy tidak akan berjalan) ...
-                    }
-                    
-                    // Tidak ada order, tampilkan pesan kosong
-                    document.getElementById('activity-loading').classList.add('hidden');
-                    document.getElementById('activity-empty').classList.remove('hidden');
-                    return;
-                }
-                
-                console.log('Found', orders.length, 'orders for user:', userId);
-                
-                // Ambil payment history untuk setiap order
-                const orderIds = orders.map(order => order.id);
-                const { data: payments, error: paymentsError } = await supabase
-                    .from('payment_history')
-                    .select('order_id, payment_method, amount, status, created_at, transaction_id, payment_details')
-                    .in('order_id', orderIds)
-                    .order('created_at', { ascending: false });
-                
-                if (paymentsError) {
-                    console.error('Error fetching payment history:', paymentsError);
-                }
-                
-                // Ambil item pesanan untuk setiap order
-                const { data: orderItems, error: itemsError } = await supabase
-                    .from('order_items')
-                    .select(`
+                <div class="bg-gray-50 p-4 rounded-lg">
+                    <h4 class="font-semibold text-gray-800 mb-2">Informasi Pembayaran</h4>
+                    <div class="bg-white p-3 rounded-lg shadow-sm space-y-1">
+                        ${paymentHtml}
+                    </div>
+                </div>
+            </div>
+        `;
+      }
+
+      // Fungsi untuk memeriksa status autentikasi dan mengambil data profil
+      async function loadUserProfile() {
+        try {
+          // Cek session pengguna
+          const {
+            data: { session },
+            error,
+          } = await supabase.auth.getSession();
+
+          if (error) {
+            console.error("Error checking auth status:", error);
+            window.location.href = "login.html";
+            return;
+          }
+
+          if (!session) {
+            // Redirect ke login jika tidak ada session
+            console.log("No session, redirecting to login.");
+            window.location.href = "login.html";
+            return;
+          }
+
+          const user = session.user;
+
+          // Ambil data profil dari database Supabase
+          const { data: profileData, error: profileError } = await supabase
+            .from("profiles")
+            .select("*")
+            .eq("id", user.id)
+            .single();
+
+          if (profileError && profileError.code !== "PGRST116") {
+            // PGRST116 = baris tidak ditemukan
+            console.error("Error fetching profile data:", profileError);
+            // Tetap lanjutkan dengan data dari auth
+          }
+
+          // Gunakan data dari tabel profiles jika ada, jika tidak gunakan dari auth
+          const displayName =
+            profileData?.display_name ||
+            user.user_metadata?.display_name ||
+            user.email;
+          const phone = profileData?.phone || user.user_metadata?.phone || "";
+          const bio = profileData?.bio || user.user_metadata?.bio || "";
+          const location =
+            profileData?.location || user.user_metadata?.location || "";
+
+          // Update UI dengan data pengguna
+          document.getElementById("profile-email").textContent = user.email;
+          document.getElementById("profile-name").textContent = displayName;
+
+          // Format tanggal
+          const createdAt = new Date(user.created_at);
+          const lastSignIn = new Date(user.last_sign_in_at || user.created_at);
+
+          document.getElementById("member-since").textContent =
+            createdAt.toLocaleDateString("id-ID", {
+              year: "numeric",
+              month: "long",
+              day: "numeric",
+            });
+
+          document.getElementById("last-login").textContent =
+            lastSignIn.toLocaleString("id-ID", {
+              year: "numeric",
+              month: "long",
+              day: "numeric",
+              hour: "2-digit",
+              minute: "2-digit",
+            });
+
+          // Update informasi personal
+          document.getElementById("profile-phone").textContent = phone || "-";
+          document.getElementById("profile-location").textContent =
+            location || "-";
+          document.getElementById("profile-bio").textContent =
+            bio || "Belum ada informasi bio.";
+
+          // Set nilai form
+          document.getElementById("display-name").value = displayName;
+          document.getElementById("phone").value = phone;
+          document.getElementById("bio").value = bio;
+          document.getElementById("location").value = location;
+
+          // Tampilkan profil pengguna di navbar
+          showUserProfile(user);
+
+          // Load purchase history
+          loadPurchaseHistory(user.id);
+        } catch (error) {
+          console.error("Error loading profile:", error);
+          // window.location.href = 'login.html'; // Matikan ini agar tidak redirect loop jika ada error
+        }
+      }
+
+      // Variabel global untuk menyimpan data order dan state pagination
+      let allOrders = [];
+      let filteredOrders = [];
+      let currentPage = 1;
+      let itemsPerPage = 5;
+      let currentUserId = null;
+      let currentSortField = "date";
+      let currentSortDirection = "desc";
+      let currentFilters = {
+        status: "all",
+        dateRange: "all",
+        search: "",
+      };
+
+      // Fungsi untuk mengambil dan menampilkan riwayat pembelian
+      async function loadPurchaseHistory(userId) {
+        try {
+          console.log("=== LOADING PURCHASE HISTORY ===");
+          console.log("User ID:", userId);
+
+          // Tampilkan loading
+          document
+            .getElementById("activity-loading")
+            .classList.remove("hidden");
+          document.getElementById("activity-empty").classList.add("hidden");
+          document.getElementById("activity-content").classList.add("hidden");
+
+          currentUserId = userId;
+
+          // Ambil data order dari user
+          console.log("Fetching orders for user:", userId);
+          const { data: orders, error: ordersError } = await supabase
+            .from("orders")
+            .select(
+              "id, order_number, status, total_amount, created_at, shipping_address, payment_method"
+            )
+            .eq("user_id", userId)
+            .order("created_at", { ascending: false });
+
+          console.log("Orders query result:", { orders, ordersError });
+
+          if (ordersError) {
+            console.error("Error fetching orders:", ordersError);
+            document.getElementById("activity-loading").classList.add("hidden");
+            document
+              .getElementById("activity-empty")
+              .classList.remove("hidden");
+            return;
+          }
+
+          // ============================================================
+          // PERUBAHAN: Mematikan Data Dummy
+          // ============================================================
+          if (!orders || orders.length === 0) {
+            console.log("No orders found for user:", userId);
+            const showDummyData = false; // <<< DIPASTIKAN FALSE
+
+            if (showDummyData) {
+              // ... (kode data dummy tidak akan berjalan) ...
+            }
+
+            // Tidak ada order, tampilkan pesan kosong
+            document.getElementById("activity-loading").classList.add("hidden");
+            document
+              .getElementById("activity-empty")
+              .classList.remove("hidden");
+            return;
+          }
+
+          console.log("Found", orders.length, "orders for user:", userId);
+
+          // Ambil payment history untuk setiap order
+          const orderIds = orders.map((order) => order.id);
+          const { data: payments, error: paymentsError } = await supabase
+            .from("payment_history")
+            .select(
+              "order_id, payment_method, amount, status, created_at, transaction_id, payment_details"
+            )
+            .in("order_id", orderIds)
+            .order("created_at", { ascending: false });
+
+          if (paymentsError) {
+            console.error("Error fetching payment history:", paymentsError);
+          }
+
+          // Ambil item pesanan untuk setiap order
+          const { data: orderItems, error: itemsError } = await supabase
+            .from("order_items")
+            .select(
+              `
                         id, 
                         order_id, 
                         quantity, 
@@ -1101,535 +1380,487 @@
                             image_url,
                             category
                         )
-                    `)
-                    .in('order_id', orderIds);
-                    
-                if (itemsError) {
-                    console.error('Error fetching order items:', itemsError);
-                }
-                
-                // Gabungkan data order dengan payment history dan order items
-                const ordersWithDetails = orders.map(order => {
-                    const orderPayments = payments?.filter(payment => payment.order_id === order.id) || [];
-                    const latestPayment = orderPayments.length > 0 ? orderPayments[0] : null;
-                    const items = orderItems?.filter(item => item.order_id === order.id) || [];
-                    
-                    let shippingAddress = {};
-                    try {
-                        if (typeof order.shipping_address === 'string') {
-                            shippingAddress = JSON.parse(order.shipping_address);
-                        } else {
-                            shippingAddress = order.shipping_address;
-                        }
-                    } catch (e) {
-                        console.error('Error parsing shipping address:', e);
-                    }
-                    
-                    return {
-                        ...order,
-                        payment: latestPayment,
-                        items: items,
-                        shipping: shippingAddress
-                    };
-                });
-                
-                // Simpan data order untuk digunakan oleh filter dan sorting
-                allOrders = ordersWithDetails;
-                
-                // Terapkan filter dan sorting default
-                applyFiltersAndSort();
-                
-                // Setup event listeners untuk filter dan sorting
-                setupFilterAndSortListeners();
-                
-                // Tambahkan event listener untuk tombol view all
-                // (Pastikan listener hanya ditambah sekali)
-                const viewAllBtn = document.getElementById('view-all-orders');
-                // Hapus listener lama jika ada, untuk menghindari duplikasi
-                const newViewAllBtn = viewAllBtn.cloneNode(true);
-                viewAllBtn.parentNode.replaceChild(newViewAllBtn, viewAllBtn);
+                    `
+            )
+            .in("order_id", orderIds);
+          const { data: shippingHistory, error: shippingError } = await supabase
+            .from("shipping_history")
+            .select(
+              "order_id, status, created_at, shipping_details, tracking_number"
+            )
+            .in("order_id", orderIds)
+            .order("created_at", { ascending: true }); // Dari terlama ke terbaru untuk timeline
 
-                newViewAllBtn.addEventListener('click', function() {
-                    const span = this.querySelector('span');
-                    if (span.textContent === 'View All') {
-                        showAllOrders(userId);
-                    } else {
-                        span.textContent = 'View All';
-                        loadPurchaseHistory(userId, 5); // Kembali ke limit awal
-                    }
-                });
+          if (shippingError) {
+            console.error("Error fetching shipping history:", shippingError);
+            // Kita tidak menghentikan proses, timeline akan kosong saja
+          }
+          if (itemsError) {
+            console.error("Error fetching order items:", itemsError);
+          }
 
-                // Tampilkan konten (akan diatur oleh renderCurrentPage)
-                // document.getElementById('activity-loading').classList.add('hidden');
-                // document.getElementById('activity-content').classList.remove('hidden');
-                
-            } catch (error) {
-                console.error('Error loading purchase history:', error);
-                document.getElementById('activity-loading').classList.add('hidden');
-                document.getElementById('activity-empty').classList.remove('hidden');
+          // Gabungkan data order dengan payment history dan order items
+          const ordersWithDetails = orders.map((order) => {
+            const orderPayments =
+              payments?.filter((payment) => payment.order_id === order.id) ||
+              [];
+            const latestPayment =
+              orderPayments.length > 0 ? orderPayments[0] : null;
+            const items =
+              orderItems?.filter((item) => item.order_id === order.id) || [];
+
+            let shippingAddress = {};
+            try {
+              if (typeof order.shipping_address === "string") {
+                shippingAddress = JSON.parse(order.shipping_address);
+              } else {
+                shippingAddress = order.shipping_address;
+              }
+            } catch (e) {
+              console.error("Error parsing shipping address:", e);
             }
+
+            return {
+              ...order,
+              payment: latestPayment,
+              items: items,
+              shipping: shippingAddress,
+              shipping_history:
+                shippingHistory?.filter((hist) => hist.order_id === order.id) ||
+                [],
+            };
+          });
+
+          // Simpan data order untuk digunakan oleh filter dan sorting
+          allOrders = ordersWithDetails;
+
+          // Terapkan filter dan sorting default
+          applyFiltersAndSort();
+
+          // Setup event listeners untuk filter dan sorting
+          setupFilterAndSortListeners();
+
+          // Tampilkan konten (akan diatur oleh renderCurrentPage)
+          // document.getElementById('activity-loading').classList.add('hidden');
+          // document.getElementById('activity-content').classList.remove('hidden');
+        } catch (error) {
+          console.error("Error loading purchase history:", error);
+          document.getElementById("activity-loading").classList.add("hidden");
+          document.getElementById("activity-empty").classList.remove("hidden");
         }
-        
-        // Fungsi untuk setup event listeners filter dan sorting
-        function setupFilterAndSortListeners() {
-            // (Hanya tambahkan listener jika belum ada)
-            const statusFilter = document.getElementById('filter-status');
-            if (statusFilter && !statusFilter.dataset.listener) {
-                statusFilter.dataset.listener = 'true';
-                statusFilter.addEventListener('change', function() {
-                    currentFilters.status = this.value;
-                    currentPage = 1; // Reset ke halaman pertama
-                    applyFiltersAndSort();
-                });
-            }
-            
-            const dateFilter = document.getElementById('filter-date');
-            if (dateFilter && !dateFilter.dataset.listener) {
-                dateFilter.dataset.listener = 'true';
-                dateFilter.addEventListener('change', function() {
-                    currentFilters.dateRange = this.value;
-                    currentPage = 1; // Reset ke halaman pertama
-                    applyFiltersAndSort();
-                });
-            }
-            
-            const sortFilter = document.getElementById('sort-by');
-            if (sortFilter && !sortFilter.dataset.listener) {
-                sortFilter.dataset.listener = 'true';
-                sortFilter.addEventListener('change', function() {
-                    const [field, direction] = this.value.split('-');
-                    currentSortField = field;
-                    currentSortDirection = direction;
-                    applyFiltersAndSort();
-                });
-            }
-            
-            const searchInput = document.getElementById('search-orders');
-            if (searchInput && !searchInput.dataset.listener) {
-                searchInput.dataset.listener = 'true';
-                let searchTimeout;
-                searchInput.addEventListener('input', function() {
-                    clearTimeout(searchTimeout);
-                    searchTimeout = setTimeout(() => {
-                        currentFilters.search = this.value.trim().toLowerCase();
-                        currentPage = 1; // Reset ke halaman pertama
-                        applyFiltersAndSort();
-                    }, 300); // Debounce 300ms
-                });
-            }
-            
-            document.querySelectorAll('[data-sort]').forEach(header => {
-                if (!header.dataset.listener) {
-                    header.dataset.listener = 'true';
-                    header.addEventListener('click', function() {
-                        const field = this.getAttribute('data-sort');
-                        
-                        if (field === currentSortField) {
-                            currentSortDirection = currentSortDirection === 'asc' ? 'desc' : 'asc';
-                        } else {
-                            currentSortField = field;
-                            currentSortDirection = 'desc'; 
-                        }
-                        
-                        const sortBySelect = document.getElementById('sort-by');
-                        const optionValue = `${currentSortField}-${currentSortDirection}`;
-                        if (sortBySelect.querySelector(`option[value="${optionValue}"]`)) {
-                            sortBySelect.value = optionValue;
-                        }
-                        
-                        document.querySelectorAll('.sort-icon').forEach(icon => {
-                            icon.classList.add('hidden');
-                        });
-                        
-                        const currentIcon = this.querySelector('.sort-icon');
-                        if (currentIcon) {
-                            currentIcon.classList.remove('hidden');
-                            currentIcon.style.transform = currentSortDirection === 'asc' ? 'rotate(180deg)' : 'rotate(0deg)';
-                        }
-                        
-                        applyFiltersAndSort();
-                    });
-                }
-            });
-            
-            const prevBtn = document.getElementById('prev-page');
-            if(prevBtn && !prevBtn.dataset.listener) {
-                prevBtn.dataset.listener = 'true';
-                prevBtn.addEventListener('click', function() {
-                    if (currentPage > 1) {
-                        currentPage--;
-                        renderCurrentPage();
-                    }
-                });
-            }
+      }
 
-            const nextBtn = document.getElementById('next-page');
-            if(nextBtn && !nextBtn.dataset.listener) {
-                nextBtn.dataset.listener = 'true';
-                nextBtn.addEventListener('click', function() {
-                    const totalPages = Math.ceil(filteredOrders.length / itemsPerPage);
-                    if (currentPage < totalPages) {
-                        currentPage++;
-                        renderCurrentPage();
-                    }
-                });
-            }
-        }
-        
-        // Fungsi untuk menerapkan filter dan sorting
-        function applyFiltersAndSort() {
-            // Filter orders
-            filteredOrders = allOrders.filter(order => {
-                // Filter by status
-                // PERBAIKAN: Cek status dari order.status
-                const orderStatus = order.status ? order.status.toLowerCase() : '';
-                if (currentFilters.status !== 'all' && orderStatus !== currentFilters.status) {
-                    return false;
-                }
-                
-                // Filter by date range
-                if (currentFilters.dateRange !== 'all') {
-                    const orderDate = new Date(order.created_at);
-                    const now = new Date();
-                    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-                    
-                    switch (currentFilters.dateRange) {
-                        case 'today':
-                            if (orderDate < todayStart) return false;
-                            break;
-                        case 'week':
-                            const weekStart = new Date(now.setDate(now.getDate() - 7));
-                            weekStart.setHours(0,0,0,0);
-                            if (orderDate < weekStart) return false;
-                            break;
-                        case 'month':
-                            const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-                            if (orderDate < monthStart) return false;
-                            break;
-                        case 'year':
-                            const yearStart = new Date(now.getFullYear(), 0, 1);
-                            if (orderDate < yearStart) return false;
-                            break;
-                    }
-                }
-                
-                // Filter by search
-                if (currentFilters.search) {
-                    const searchTerm = currentFilters.search.toLowerCase();
-                    
-                    // Search in order number
-                    if (order.order_number.toLowerCase().includes(searchTerm)) {
-                        return true;
-                    }
-                    
-                    // Search in product names
-                    const hasMatchingProduct = order.items.some(item => 
-                        item.products && item.products.name.toLowerCase().includes(searchTerm)
-                    );
-                    
-                    if (hasMatchingProduct) {
-                        return true;
-                    }
-                    
-                    // If no match found
-                    return false;
-                }
-                
-                return true;
-            });
-            
-            // Sort orders
-            filteredOrders.sort((a, b) => {
-                let comparison = 0;
-                
-                switch (currentSortField) {
-                    case 'order':
-                        comparison = a.order_number.localeCompare(b.order_number);
-                        break;
-                    case 'date':
-                        comparison = new Date(b.created_at) - new Date(a.created_at); // Descending default
-                        break;
-                    case 'amount':
-                        comparison = a.total_amount - b.total_amount;
-                        break;
-                    case 'status':
-                        comparison = (a.status || '').localeCompare(b.status || '');
-                        break;
-                    default:
-                        comparison = new Date(b.created_at) - new Date(a.created_at);
-                }
-                
-                // Reverse for ascending order
-                return currentSortDirection === 'asc' ? -comparison : comparison;
-            });
-            
-            // Reset to first page and render
-            currentPage = 1;
-            renderCurrentPage();
+      // Fungsi untuk setup event listeners filter dan sorting
+      function setupFilterAndSortListeners() {
+        // (Hanya tambahkan listener jika belum ada)
+        const statusFilter = document.getElementById("filter-status");
+        if (statusFilter && !statusFilter.dataset.listener) {
+          statusFilter.dataset.listener = "true";
+          statusFilter.addEventListener("change", function () {
+            currentFilters.status = this.value;
+            currentPage = 1; // Reset ke halaman pertama
+            applyFiltersAndSort();
+          });
         }
 
-        // ============================================================
-        // PERUBAHAN 4: Logika renderCurrentPage yang DIPERBAIKI
-        // ============================================================
-        function renderCurrentPage() {
-            console.log('Rendering current page:', currentPage);
-            
-            // Sembunyikan loading
-            document.getElementById('activity-loading').classList.add('hidden');
-            
-            // Calculate pagination
-            const startIndex = (currentPage - 1) * itemsPerPage;
-            const endIndex = Math.min(startIndex + itemsPerPage, filteredOrders.length);
-            const currentPageOrders = filteredOrders.slice(startIndex, endIndex);
-            
-            console.log('Orders for this page:', currentPageOrders.length);
-            
-            // Update pagination UI
-            document.getElementById('showing-start').textContent = filteredOrders.length > 0 ? startIndex + 1 : 0;
-            document.getElementById('showing-end').textContent = endIndex;
-            document.getElementById('total-orders').textContent = filteredOrders.length;
-            
-            // Enable/disable pagination buttons
-            document.getElementById('prev-page').disabled = currentPage === 1;
-            document.getElementById('next-page').disabled = endIndex >= filteredOrders.length;
-            
-            // Render data ke tabel
-            renderPurchaseHistory(currentPageOrders); // Fungsi ini sekarang HANYA merender baris
-            
-            // TENTUKAN CONTAINER MANA YANG TAMPIL
-            if (allOrders.length === 0) {
-                // KASUS 1: User belum pernah order sama sekali
-                console.log('No orders found at all. Showing empty state.');
-                document.getElementById('activity-empty').classList.remove('hidden');
-                document.getElementById('activity-content').classList.add('hidden');
+        const dateFilter = document.getElementById("filter-date");
+        if (dateFilter && !dateFilter.dataset.listener) {
+          dateFilter.dataset.listener = "true";
+          dateFilter.addEventListener("change", function () {
+            currentFilters.dateRange = this.value;
+            currentPage = 1; // Reset ke halaman pertama
+            applyFiltersAndSort();
+          });
+        }
+
+        const sortFilter = document.getElementById("sort-by");
+        if (sortFilter && !sortFilter.dataset.listener) {
+          sortFilter.dataset.listener = "true";
+          sortFilter.addEventListener("change", function () {
+            const [field, direction] = this.value.split("-");
+            currentSortField = field;
+            currentSortDirection = direction;
+            applyFiltersAndSort();
+          });
+        }
+
+        const searchInput = document.getElementById("search-orders");
+        if (searchInput && !searchInput.dataset.listener) {
+          searchInput.dataset.listener = "true";
+          let searchTimeout;
+          searchInput.addEventListener("input", function () {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+              currentFilters.search = this.value.trim().toLowerCase();
+              currentPage = 1; // Reset ke halaman pertama
+              applyFiltersAndSort();
+            }, 300); // Debounce 300ms
+          });
+        }
+
+        document.querySelectorAll("[data-sort]").forEach((header) => {
+          if (!header.dataset.listener) {
+            header.dataset.listener = "true";
+            header.addEventListener("click", function () {
+              const field = this.getAttribute("data-sort");
+
+              if (field === currentSortField) {
+                currentSortDirection =
+                  currentSortDirection === "asc" ? "desc" : "asc";
+              } else {
+                currentSortField = field;
+                currentSortDirection = "desc";
+              }
+
+              const sortBySelect = document.getElementById("sort-by");
+              const optionValue = `${currentSortField}-${currentSortDirection}`;
+              if (
+                sortBySelect.querySelector(`option[value="${optionValue}"]`)
+              ) {
+                sortBySelect.value = optionValue;
+              }
+
+              document.querySelectorAll(".sort-icon").forEach((icon) => {
+                icon.classList.add("hidden");
+              });
+
+              const currentIcon = this.querySelector(".sort-icon");
+              if (currentIcon) {
+                currentIcon.classList.remove("hidden");
+                currentIcon.style.transform =
+                  currentSortDirection === "asc"
+                    ? "rotate(180deg)"
+                    : "rotate(0deg)";
+              }
+
+              applyFiltersAndSort();
+            });
+          }
+        });
+
+        const prevBtn = document.getElementById("prev-page");
+        if (prevBtn && !prevBtn.dataset.listener) {
+          prevBtn.dataset.listener = "true";
+          prevBtn.addEventListener("click", function () {
+            if (currentPage > 1) {
+              currentPage--;
+              renderCurrentPage();
+            }
+          });
+        }
+
+        const nextBtn = document.getElementById("next-page");
+        if (nextBtn && !nextBtn.dataset.listener) {
+          nextBtn.dataset.listener = "true";
+          nextBtn.addEventListener("click", function () {
+            const totalPages = Math.ceil(filteredOrders.length / itemsPerPage);
+            if (currentPage < totalPages) {
+              currentPage++;
+              renderCurrentPage();
+            }
+          });
+        }
+        const viewAllBtn = document.getElementById("view-all-orders");
+        if (viewAllBtn && !viewAllBtn.dataset.listener) {
+          viewAllBtn.dataset.listener = "true";
+          viewAllBtn.addEventListener("click", function () {
+            const span = this.querySelector("span");
+            const paginationControls = document.querySelector(
+              ".mt-4.flex.items-center.justify-between"
+            );
+
+            if (span.textContent === "View All") {
+              // --- Logika Baru untuk VIEW ALL ---
+              itemsPerPage = 10000; // Set ke angka yang sangat besar
+              span.textContent = "Show Less";
+              if (paginationControls) {
+                paginationControls.style.display = "none";
+              }
             } else {
-                // KASUS 2: User punya order (meskipun mungkin 0 setelah difilter)
-                // SELALU tampilkan 'activity-content' (filternya, tabelnya, dll)
-                console.log('User has orders. Showing content state.');
-                document.getElementById('activity-empty').classList.add('hidden');
-                document.getElementById('activity-content').classList.remove('hidden');
+              // --- Logika Baru untuk SHOW LESS ---
+              itemsPerPage = 5; // Kembalikan ke 5
+              span.textContent = "View All";
+              if (paginationControls) {
+                paginationControls.style.display = "flex";
+              }
             }
-            
-            // Pastikan Feather icons diinisialisasi ulang jika ada
-            if (window.feather) {
-                window.feather.replace();
-            }
+
+            // Panggil ulang render/filter
+            currentPage = 1;
+            applyFiltersAndSort();
+          });
         }
-        
-        // Fungsi untuk menampilkan semua pesanan
-        async function showAllOrders(userId) {
-            try {
-                // Tampilkan loading
-                document.getElementById('activity-loading').classList.remove('hidden');
-                document.getElementById('activity-content').classList.add('hidden');
-                
-                // Ambil semua data order dari user (tanpa limit)
-                const { data: orders, error: ordersError } = await supabase
-                    .from('orders')
-                    .select('id, order_number, status, total_amount, created_at, shipping_address, payment_method')
-                    .eq('user_id', userId)
-                    .order('created_at', { ascending: false });
-                
-                if (ordersError) {
-                    console.error('Error fetching all orders:', ordersError);
-                    document.getElementById('activity-loading').classList.add('hidden');
-                    document.getElementById('activity-empty').classList.remove('hidden');
-                    return;
-                }
-                
-                if (!orders || orders.length === 0) {
-                    // Tidak ada order, tampilkan pesan kosong
-                    document.getElementById('activity-loading').classList.add('hidden');
-                    document.getElementById('activity-empty').classList.remove('hidden');
-                    return;
-                }
-                
-                // Ambil payment history untuk setiap order
-                const orderIds = orders.map(order => order.id);
-                const { data: payments, error: paymentsError } = await supabase
-                    .from('payment_history')
-                    .select('order_id, payment_method, amount, status, created_at, transaction_id, payment_details')
-                    .in('order_id', orderIds);
-                
-                if (paymentsError) {
-                    console.error('Error fetching all payment history:', paymentsError);
-                }
-                
-                // Ambil item pesanan untuk setiap order
-                const { data: orderItems, error: itemsError } = await supabase
-                    .from('order_items')
-                    .select(`
-                        id, 
-                        order_id, 
-                        quantity, 
-                        price, 
-                        subtotal,
-                        products (
-                            id,
-                            name,
-                            image_url,
-                            category
-                        )
-                    `)
-                    .in('order_id', orderIds);
-                    
-                if (itemsError) {
-                    console.error('Error fetching order items:', itemsError);
-                }
-                
-                // Gabungkan data order dengan payment history dan order items
-                const ordersWithDetails = orders.map(order => {
-                    const orderPayments = payments?.filter(payment => payment.order_id === order.id) || [];
-                    const latestPayment = orderPayments.length > 0 ? orderPayments[0] : null;
-                    const items = orderItems?.filter(item => item.order_id === order.id) || [];
-                    
-                    let shippingAddress = {};
-                    try {
-                        if (typeof order.shipping_address === 'string') {
-                            shippingAddress = JSON.parse(order.shipping_address);
-                        } else {
-                            shippingAddress = order.shipping_address;
-                        }
-                    } catch (e) {
-                        console.error('Error parsing shipping address:', e);
-                    }
-                    
-                    return {
-                        ...order,
-                        payment: latestPayment,
-                        items: items,
-                        shipping: shippingAddress
-                    };
-                });
-                
-                // Update data order global
-                allOrders = ordersWithDetails;
-                
-                // Ubah teks tombol view all
-                const viewAllBtn = document.getElementById('view-all-orders');
-                viewAllBtn.querySelector('span').textContent = 'Show Less';
-                
-                // (Event listener sudah diatur ulang di loadPurchaseHistory,
-                // jadi kita hanya perlu memanggil applyFiltersAndSort)
-                
-                // Terapkan filter dan sorting yang ada
-                applyFiltersAndSort();
-                
-            } catch (error) {
-                console.error('Error showing all orders:', error);
-                document.getElementById('activity-loading').classList.add('hidden');
-                document.getElementById('activity-empty').classList.remove('hidden');
+      }
+
+      // Fungsi untuk menerapkan filter dan sorting
+      function applyFiltersAndSort() {
+        // Filter orders
+        filteredOrders = allOrders.filter((order) => {
+          // Filter by status
+          // PERBAIKAN: Cek status dari order.status
+          const orderStatus = order.status ? order.status.toLowerCase() : "";
+          if (
+            currentFilters.status !== "all" &&
+            orderStatus !== currentFilters.status
+          ) {
+            return false;
+          }
+
+          // Filter by date range
+          if (currentFilters.dateRange !== "all") {
+            const orderDate = new Date(order.created_at);
+            const now = new Date();
+            const todayStart = new Date(
+              now.getFullYear(),
+              now.getMonth(),
+              now.getDate()
+            );
+
+            switch (currentFilters.dateRange) {
+              case "today":
+                if (orderDate < todayStart) return false;
+                break;
+              case "week":
+                const weekStart = new Date(now.setDate(now.getDate() - 7));
+                weekStart.setHours(0, 0, 0, 0);
+                if (orderDate < weekStart) return false;
+                break;
+              case "month":
+                const monthStart = new Date(
+                  now.getFullYear(),
+                  now.getMonth(),
+                  1
+                );
+                if (orderDate < monthStart) return false;
+                break;
+              case "year":
+                const yearStart = new Date(now.getFullYear(), 0, 1);
+                if (orderDate < yearStart) return false;
+                break;
             }
+          }
+
+          // Filter by search
+          if (currentFilters.search) {
+            const searchTerm = currentFilters.search.toLowerCase();
+
+            // Search in order number
+            if (order.order_number.toLowerCase().includes(searchTerm)) {
+              return true;
+            }
+
+            // Search in product names
+            const hasMatchingProduct = order.items.some(
+              (item) =>
+                item.products &&
+                item.products.name.toLowerCase().includes(searchTerm)
+            );
+
+            if (hasMatchingProduct) {
+              return true;
+            }
+
+            // If no match found
+            return false;
+          }
+
+          return true;
+        });
+
+        // Sort orders
+        filteredOrders.sort((a, b) => {
+          let comparison = 0;
+
+          switch (currentSortField) {
+            case "order":
+              comparison = a.order_number.localeCompare(b.order_number);
+              break;
+            case "date":
+              comparison = new Date(b.created_at) - new Date(a.created_at); // Descending default
+              break;
+            case "amount":
+              comparison = a.total_amount - b.total_amount;
+              break;
+            case "status":
+              comparison = (a.status || "").localeCompare(b.status || "");
+              break;
+            default:
+              comparison = new Date(b.created_at) - new Date(a.created_at);
+          }
+
+          // Reverse for ascending order
+          return currentSortDirection === "asc" ? -comparison : comparison;
+        });
+
+        // Reset to first page and render
+        currentPage = 1;
+        renderCurrentPage();
+      }
+
+      // ============================================================
+      // PERUBAHAN 4: Logika renderCurrentPage yang DIPERBAIKI
+      // ============================================================
+      function renderCurrentPage() {
+        console.log("Rendering current page:", currentPage);
+
+        // Sembunyikan loading
+        document.getElementById("activity-loading").classList.add("hidden");
+
+        // Calculate pagination
+        const startIndex = (currentPage - 1) * itemsPerPage;
+        const endIndex = Math.min(
+          startIndex + itemsPerPage,
+          filteredOrders.length
+        );
+        const currentPageOrders = filteredOrders.slice(startIndex, endIndex);
+
+        console.log("Orders for this page:", currentPageOrders.length);
+
+        // Update pagination UI
+        document.getElementById("showing-start").textContent =
+          filteredOrders.length > 0 ? startIndex + 1 : 0;
+        document.getElementById("showing-end").textContent = endIndex;
+        document.getElementById("total-orders").textContent =
+          filteredOrders.length;
+
+        // Enable/disable pagination buttons
+        document.getElementById("prev-page").disabled = currentPage === 1;
+        document.getElementById("next-page").disabled =
+          endIndex >= filteredOrders.length;
+
+        // Render data ke tabel
+        renderPurchaseHistory(currentPageOrders); // Fungsi ini sekarang HANYA merender baris
+
+        // TENTUKAN CONTAINER MANA YANG TAMPIL
+        if (allOrders.length === 0) {
+          // KASUS 1: User belum pernah order sama sekali
+          console.log("No orders found at all. Showing empty state.");
+          document.getElementById("activity-empty").classList.remove("hidden");
+          document.getElementById("activity-content").classList.add("hidden");
+        } else {
+          // KASUS 2: User punya order (meskipun mungkin 0 setelah difilter)
+          // SELALU tampilkan 'activity-content' (filternya, tabelnya, dll)
+          console.log("User has orders. Showing content state.");
+          document.getElementById("activity-empty").classList.add("hidden");
+          document
+            .getElementById("activity-content")
+            .classList.remove("hidden");
         }
 
-        // ============================================================
-        // PERUBAHAN 5: Menambahkan getStatusBadge dan formatPrice
-        // ============================================================
-        
-        // Fungsi helper untuk format status
-        function getStatusBadge(status) {
-            let statusClass = '';
-            let statusText = status ? status.charAt(0).toUpperCase() + status.slice(1) : 'Unknown';
+        // Pastikan Feather icons diinisialisasi ulang jika ada
+        if (window.feather) {
+          window.feather.replace();
+        }
+      }
 
-            switch (status ? status.toLowerCase() : '') {
-                case 'pending':
-                    statusClass = 'bg-yellow-100 text-yellow-800';
-                    statusText = 'Pending';
-                    break;
-                case 'processing':
-                case 'paid':
-                case 'settlement': // Status dari Midtrans
-                    statusClass = 'bg-blue-100 text-blue-800';
-                    statusText = 'Diproses';
-                    break;
-                case 'shipped':
-                    statusClass = 'bg-indigo-100 text-indigo-800';
-                    statusText = 'Dikirim';
-                    break;
-                case 'success':
-                case 'completed': // Status Anda
-                case 'delivered':
-                case 'capture': // Status dari Midtrans
-                    statusClass = 'bg-green-100 text-green-800';
-                    statusText = 'Selesai';
-                    break;
-                case 'failed':
-                case 'cancelled': // Status Anda
-                case 'expire': // Status dari Midtrans
-                case 'deny': // Status dari Midtrans
-                    statusClass = 'bg-red-100 text-red-800';
-                    statusText = 'Gagal';
-                    break;
-                case 'challenge': // Status dari Midtrans
-                    statusClass = 'bg-orange-100 text-orange-800';
-                    statusText = 'Challenge';
-                    break;
-                default:
-                    statusClass = 'bg-gray-100 text-gray-800';
-            }
-            return `<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusClass}">${statusText}</span>`;
+      // ============================================================
+      // PERUBAHAN 5: Menambahkan getStatusBadge dan formatPrice
+      // ============================================================
+
+      // Fungsi helper untuk format status
+      function getStatusBadge(status) {
+        let statusClass = "";
+        let statusText = status
+          ? status.charAt(0).toUpperCase() + status.slice(1)
+          : "Unknown";
+
+        switch (status ? status.toLowerCase() : "") {
+          case "pending":
+            statusClass = "bg-yellow-100 text-yellow-800";
+            statusText = "Pending";
+            break;
+          case "processing":
+          case "paid":
+          case "settlement": // Status dari Midtrans
+            statusClass = "bg-blue-100 text-blue-800";
+            statusText = "Diproses";
+            break;
+          case "shipped":
+            statusClass = "bg-indigo-100 text-indigo-800";
+            statusText = "Dikirim";
+            break;
+          case "success":
+          case "completed": // Status Anda
+          case "delivered":
+          case "capture": // Status dari Midtrans
+            statusClass = "bg-green-100 text-green-800";
+            statusText = "Selesai";
+            break;
+          case "failed":
+          case "cancelled": // Status Anda
+          case "expire": // Status dari Midtrans
+          case "deny": // Status dari Midtrans
+            statusClass = "bg-red-100 text-red-800";
+            statusText = "Gagal";
+            break;
+          case "challenge": // Status dari Midtrans
+            statusClass = "bg-orange-100 text-orange-800";
+            statusText = "Challenge";
+            break;
+          default:
+            statusClass = "bg-gray-100 text-gray-800";
+        }
+        return `<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusClass}">${statusText}</span>`;
+      }
+
+      // Fungsi helper untuk format harga
+      function formatPrice(price) {
+        if (typeof price !== "number" || price === null) {
+          price = 0;
+        }
+        return price.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+      }
+
+      // Fungsi ini HANYA merender baris tabel, tidak mengatur container
+      function renderPurchaseHistory(orders) {
+        console.log("Rendering purchase history rows:", orders.length);
+
+        const tableBody = document.getElementById("orders-table-body");
+        if (!tableBody) {
+          console.error("Table body element not found!");
+          return;
         }
 
-        // Fungsi helper untuk format harga
-        function formatPrice(price) {
-            if (typeof price !== 'number' || price === null) {
-                price = 0;
-            }
-            return price.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+        // Bersihkan tabel
+        tableBody.innerHTML = "";
+
+        // Cek apakah array orders (dari halaman ini) kosong
+        if (orders.length === 0) {
+          // Cek apakah total hasil filter (dari semua halaman) juga kosong
+          if (filteredOrders.length === 0 && allOrders.length > 0) {
+            // Ini kasus filter tidak menemukan apa-apa
+            console.log("No orders match filter, showing message in table.");
+            tableBody.innerHTML = `<tr><td colspan="5" class="px-4 py-4 text-center text-gray-500">Tidak ada pesanan yang cocok dengan filter Anda.</td></tr>`;
+          }
+          // Jika allOrders.length === 0, renderCurrentPage akan menyembunyikan
+          // 'activity-content', jadi pesan ini tidak akan terlihat (itu OK).
+          return;
         }
-        
-        // ============================================================
-        // PERUBAHAN 6: Logika renderPurchaseHistory yang DIPERBAIKI
-        // ============================================================
-        // Fungsi ini HANYA merender baris tabel, tidak mengatur container
-        function renderPurchaseHistory(orders) {
-            console.log('Rendering purchase history rows:', orders.length);
-            
-            const tableBody = document.getElementById('orders-table-body');
-            if (!tableBody) {
-                console.error('Table body element not found!');
-                return;
-            }
-            
-            // Bersihkan tabel
-            tableBody.innerHTML = '';
-            
-            // Cek apakah array orders (dari halaman ini) kosong
-            if (orders.length === 0) {
-                // Cek apakah total hasil filter (dari semua halaman) juga kosong
-                if (filteredOrders.length === 0 && allOrders.length > 0) {
-                    // Ini kasus filter tidak menemukan apa-apa
-                    console.log('No orders match filter, showing message in table.');
-                    tableBody.innerHTML = `<tr><td colspan="5" class="px-4 py-4 text-center text-gray-500">Tidak ada pesanan yang cocok dengan filter Anda.</td></tr>`;
-                }
-                // Jika allOrders.length === 0, renderCurrentPage akan menyembunyikan
-                // 'activity-content', jadi pesan ini tidak akan terlihat (itu OK).
-                return;
-            }
-            
-            console.log('Rendering', orders.length, 'order rows');
-            
-            orders.forEach(order => {
-                const orderDate = new Date(order.created_at);
-                const formattedDate = orderDate.toLocaleDateString('id-ID', {
-                    year: 'numeric',
-                    month: 'short',
-                    day: 'numeric'
-                });
-                
-                const statusBadgeHtml = getStatusBadge(order.status);
-                
-                const formattedAmount = new Intl.NumberFormat('id-ID', {
-                    style: 'currency',
-                    currency: 'IDR',
-                    minimumFractionDigits: 0
-                }).format(order.total_amount);
-                
-                const mainRow = document.createElement('tr');
-                mainRow.className = 'order-row cursor-pointer hover:bg-gray-50 transition-colors';
-                mainRow.setAttribute('data-order-id', order.id);
-                
-                mainRow.innerHTML = `
+
+        console.log("Rendering", orders.length, "order rows");
+
+        orders.forEach((order) => {
+          const orderDate = new Date(order.created_at);
+          const formattedDate = orderDate.toLocaleDateString("id-ID", {
+            year: "numeric",
+            month: "short",
+            day: "numeric",
+          });
+
+          const statusBadgeHtml = getStatusBadge(order.status);
+
+          const formattedAmount = new Intl.NumberFormat("id-ID", {
+            style: "currency",
+            currency: "IDR",
+            minimumFractionDigits: 0,
+          }).format(order.total_amount);
+
+          const mainRow = document.createElement("tr");
+          mainRow.className =
+            "order-row cursor-pointer hover:bg-gray-50 transition-colors";
+          mainRow.setAttribute("data-order-id", order.id);
+
+          mainRow.innerHTML = `
                     <td class="px-4 py-4 whitespace-nowrap">
                         <div class="flex items-center">
                             <button class="expand-button mr-2 text-gray-400 hover:text-purple-600 focus:outline-none transition-transform duration-200" data-expanded="false">
@@ -1653,88 +1884,125 @@
                         <a href="#" class="view-details-btn text-purple-600 hover:text-purple-900">View Details</a>
                     </td>
                 `;
-                
-                tableBody.appendChild(mainRow);
-                
-                const detailRow = document.createElement('tr');
-                detailRow.className = 'order-detail-row hidden';
-                detailRow.setAttribute('data-parent-id', order.id);
-                
-                let itemsHtml = '';
-                if (order.items && order.items.length > 0) {
-                    itemsHtml = order.items.map(item => `
+
+          tableBody.appendChild(mainRow);
+
+          const detailRow = document.createElement("tr");
+          detailRow.className = "order-detail-row hidden";
+          detailRow.setAttribute("data-parent-id", order.id);
+
+          let itemsHtml = "";
+          if (order.items && order.items.length > 0) {
+            itemsHtml = order.items
+              .map(
+                (item) => `
                         <div class="flex items-center py-2 border-b border-gray-100">
                             <div class="w-12 h-12 flex-shrink-0 mr-3 bg-gray-100 rounded-md overflow-hidden">
-                                <img src="${item.products?.image_url || 'https://via.placeholder.com/48'}" alt="${item.products?.name}" class="w-full h-full object-cover">
+                                <img src="${
+                                  item.products?.image_url ||
+                                  "https://via.placeholder.com/48"
+                                }" alt="${
+                  item.products?.name
+                }" class="w-full h-full object-cover">
                             </div>
                             <div class="flex-1 min-w-0">
-                                <p class="text-sm font-medium text-gray-900 truncate">${item.products?.name || 'Product'}</p>
-                                <p class="text-xs text-gray-500">${item.products?.category || 'Category'}</p>
+                                <p class="text-sm font-medium text-gray-900 truncate">${
+                                  item.products?.name || "Product"
+                                }</p>
+                                <p class="text-xs text-gray-500">${
+                                  item.products?.category || "Category"
+                                }</p>
                             </div>
                             <div class="text-right">
-                                <p class="text-sm font-medium text-gray-900">Rp ${formatPrice(item.price)} x ${item.quantity}</p>
-                                <p class="text-xs font-bold text-purple-600">Rp ${formatPrice(item.subtotal)}</p>
+                                <p class="text-sm font-medium text-gray-900">Rp ${formatPrice(
+                                  item.price
+                                )} x ${item.quantity}</p>
+                                <p class="text-xs font-bold text-purple-600">Rp ${formatPrice(
+                                  item.subtotal
+                                )}</p>
                             </div>
                         </div>
-                    `).join('');
-                } else {
-                    itemsHtml = '<p class="text-sm text-gray-500 py-2">Tidak ada detail item tersedia</p>';
-                }
-                
-                let shippingHtml = '';
-                if (order.shipping) {
-                    shippingHtml = `
-                        <p class="text-sm"><span class="font-medium">Nama:</span> ${order.shipping.fullname || '-'}</p>
-                        <p class="text-sm"><span class="font-medium">Alamat:</span> ${order.shipping.address || '-'}</p>
-                        <p class="text-sm"><span class="font-medium">Kota:</span> ${order.shipping.city || '-'}, ${order.shipping.province || '-'}</p>
-                        <p class="text-sm"><span class="font-medium">Kode Pos:</span> ${order.shipping.postalCode || '-'}</p>
+                    `
+              )
+              .join("");
+          } else {
+            itemsHtml =
+              '<p class="text-sm text-gray-500 py-2">Tidak ada detail item tersedia</p>';
+          }
+
+          let shippingHtml = "";
+          if (order.shipping) {
+            shippingHtml = `
+                        <p class="text-sm"><span class="font-medium">Nama:</span> ${
+                          order.shipping.fullname || "-"
+                        }</p>
+                        <p class="text-sm"><span class="font-medium">Alamat:</span> ${
+                          order.shipping.address || "-"
+                        }</p>
+                        <p class="text-sm"><span class="font-medium">Kota:</span> ${
+                          order.shipping.city || "-"
+                        }, ${order.shipping.province || "-"}</p>
+                        <p class="text-sm"><span class="font-medium">Kode Pos:</span> ${
+                          order.shipping.postalCode || "-"
+                        }</p>
                     `;
-                } else {
-                    shippingHtml = '<p class="text-sm text-gray-500">Tidak ada detail pengiriman tersedia</p>';
-                }
-                
-                let paymentHtml = '';
-                if (order.payment) {
-                    const paymentDate = new Date(order.payment.created_at);
-                    const formattedPaymentDate = paymentDate.toLocaleString('id-ID', {
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                    });
-                    
-                    let paymentStatusClass = '';
-                    let paymentStatusText = order.payment.status ? order.payment.status.charAt(0).toUpperCase() + order.payment.status.slice(1) : 'Unknown';
-                    switch (order.payment.status) {
-                        case 'success':
-                        case 'settlement':
-                        case 'capture':
-                            paymentStatusClass = 'text-green-600';
-                            break;
-                        case 'pending':
-                            paymentStatusClass = 'text-yellow-600';
-                            break;
-                        case 'failed':
-                        case 'expire':
-                        case 'deny':
-                            paymentStatusClass = 'text-red-600';
-                            break;
-                        default:
-                            paymentStatusClass = 'text-gray-600';
-                    }
-                    
-                    paymentHtml = `
-                        <p class="text-sm"><span class="font-medium">Metode:</span> ${order.payment.payment_method || order.payment_method || '-'}</p>
+          } else {
+            shippingHtml =
+              '<p class="text-sm text-gray-500">Tidak ada detail pengiriman tersedia</p>';
+          }
+
+          let paymentHtml = "";
+          if (order.payment) {
+            const paymentDate = new Date(order.payment.created_at);
+            const formattedPaymentDate = paymentDate.toLocaleString("id-ID", {
+              year: "numeric",
+              month: "long",
+              day: "numeric",
+              hour: "2-digit",
+              minute: "2-digit",
+            });
+
+            let paymentStatusClass = "";
+            let paymentStatusText = order.payment.status
+              ? order.payment.status.charAt(0).toUpperCase() +
+                order.payment.status.slice(1)
+              : "Unknown";
+            switch (order.payment.status) {
+              case "success":
+              case "settlement":
+              case "capture":
+                paymentStatusClass = "text-green-600";
+                break;
+              case "pending":
+                paymentStatusClass = "text-yellow-600";
+                break;
+              case "failed":
+              case "expire":
+              case "deny":
+                paymentStatusClass = "text-red-600";
+                break;
+              default:
+                paymentStatusClass = "text-gray-600";
+            }
+
+            paymentHtml = `
+                        <p class="text-sm"><span class="font-medium">Metode:</span> ${
+                          order.payment.payment_method ||
+                          order.payment_method ||
+                          "-"
+                        }</p>
                         <p class="text-sm"><span class="font-medium">Tanggal:</span> ${formattedPaymentDate}</p>
                         <p class="text-sm"><span class="font-medium">Status:</span> <span class="${paymentStatusClass} font-medium">${paymentStatusText}</span></p>
-                        <p class="text-sm"><span class="font-medium">ID Transaksi:</span> ${order.payment.transaction_id || '-'}</p>
+                        <p class="text-sm"><span class="font-medium">ID Transaksi:</span> ${
+                          order.payment.transaction_id || "-"
+                        }</p>
                     `;
-                } else {
-                    paymentHtml = '<p class="text-sm text-gray-500">Tidak ada detail pembayaran tersedia</p>';
-                }
-                
-                detailRow.innerHTML = `
+          } else {
+            paymentHtml =
+              '<p class="text-sm text-gray-500">Tidak ada detail pembayaran tersedia</p>';
+          }
+
+          detailRow.innerHTML = `
                     <td colspan="5" class="px-4 py-4 bg-gray-50">
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                             <div>
@@ -1758,81 +2026,121 @@
                         </div>
                     </td>
                 `;
-                
-                tableBody.appendChild(detailRow);
-            });
-            
-            // Tambahkan event listener untuk expand/collapse detail
-            document.querySelectorAll('.order-row').forEach(row => {
-                row.addEventListener('click', function(e) {
-                    if (e.target.closest('.view-details-btn')) {
-                        return;
-                    }
-                    
-                    const orderId = this.getAttribute('data-order-id');
-                    const detailRow = document.querySelector(`tr[data-parent-id="${orderId}"]`);
-                    const expandButton = this.querySelector('.expand-button');
-                    
-                    if (detailRow.classList.contains('hidden')) {
-                        detailRow.classList.remove('hidden');
-                        expandButton.style.transform = 'rotate(90deg)';
-                        expandButton.setAttribute('data-expanded', 'true');
-                    } else {
-                        detailRow.classList.add('hidden');
-                        expandButton.style.transform = 'rotate(0)';
-                        expandButton.setAttribute('data-expanded', 'false');
-                    }
-                });
-            });
-            
-            // Tambahkan event listener untuk tombol view details
-            document.querySelectorAll('.view-details-btn').forEach(btn => {
-                btn.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    const orderId = this.closest('tr').getAttribute('data-order-id');
-                    const orderNumberEl = this.closest('tr').querySelector('.text-sm.font-medium.text-gray-900');
-                    const orderNumber = orderNumberEl ? orderNumberEl.textContent.trim() : 'N/A';
-                    
-                    // Ganti ini jika Anda punya halaman detail
-                    // window.location.href = `order-detail.html?order_number=${orderNumber}`; 
-                    alert(`Detail pesanan ${orderNumber} (ID: ${orderId})`);
-                });
-            });
-        }
-        
-        // Fungsi untuk menampilkan profil pengguna di navbar
-        function showUserProfile(user) {
-            // Desktop
-            document.getElementById('auth-buttons').classList.add('hidden');
-            document.getElementById('user-profile').classList.remove('hidden');
-            document.getElementById('user-email').textContent = user.email;
-            
-            // Mobile
-            document.getElementById('mobile-auth-buttons').classList.add('hidden');
-            document.getElementById('mobile-user-profile').classList.remove('hidden');
-            document.getElementById('mobile-user-email').textContent = user.email;
-            
-            // Tambahkan event listener untuk tombol logout
-            document.getElementById('logout-button').addEventListener('click', handleLogout);
-            document.getElementById('mobile-logout-button').addEventListener('click', handleLogout);
-        }
 
-        // Fungsi untuk menangani logout
-        async function handleLogout() {
-            try {
-                const { error } = await supabase.auth.signOut();
-                if (error) {
-                    console.error('Error during logout:', error);
-                    return;
-                }
-                
-                // Redirect ke halaman login setelah logout
-                window.location.href = 'login.html';
-            } catch (error) {
-                console.error('Error in logout:', error);
+          tableBody.appendChild(detailRow);
+        });
+
+        // Tambahkan event listener untuk expand/collapse detail
+        document.querySelectorAll(".order-row").forEach((row) => {
+          row.addEventListener("click", function (e) {
+            if (e.target.closest(".view-details-btn")) {
+              return;
             }
-        }
-    </script>
 
+            const orderId = this.getAttribute("data-order-id");
+            const detailRow = document.querySelector(
+              `tr[data-parent-id="${orderId}"]`
+            );
+            const expandButton = this.querySelector(".expand-button");
+
+            if (detailRow.classList.contains("hidden")) {
+              detailRow.classList.remove("hidden");
+              expandButton.style.transform = "rotate(90deg)";
+              expandButton.setAttribute("data-expanded", "true");
+            } else {
+              detailRow.classList.add("hidden");
+              expandButton.style.transform = "rotate(0)";
+              expandButton.setAttribute("data-expanded", "false");
+            }
+          });
+        });
+
+        // Tambahkan event listener untuk tombol view details
+        document.querySelectorAll(".view-details-btn").forEach((btn) => {
+          btn.addEventListener("click", function (e) {
+            e.preventDefault();
+            e.stopPropagation(); // Mencegah baris ikut ter-klik
+
+            // 1. Dapatkan orderId dari baris
+            const orderId = this.closest("tr").getAttribute("data-order-id");
+            const orderNumberEl = this.closest("tr").querySelector(
+              ".text-sm.font-medium.text-gray-900"
+            );
+            const orderNumber = orderNumberEl
+              ? orderNumberEl.textContent.trim()
+              : "N/A";
+
+            // 2. Cari data order lengkap dari variabel global allOrders
+            const order = allOrders.find((o) => o.id === orderId);
+
+            if (order) {
+              // 3. Buat HTML baru menggunakan fungsi helper
+              const modalHtml = generateModalContent(order);
+
+              // 4. Masukkan HTML ke modal
+              document.getElementById("modal-order-number").textContent =
+                orderNumber;
+              document.getElementById("modal-order-content").innerHTML =
+                modalHtml;
+
+              // 5. Tampilkan modal
+              document
+                .getElementById("order-detail-modal")
+                .classList.remove("hidden");
+
+              // 6. Render ulang ikon (penting untuk timeline)
+              if (window.feather) {
+                window.feather.replace();
+              }
+            } else {
+              console.error(
+                "Tidak dapat menemukan data order lengkap untuk:",
+                orderId
+              );
+              alert("Gagal memuat detail pesanan.");
+            }
+          });
+        });
+      }
+
+      // Fungsi untuk menampilkan profil pengguna di navbar
+      function showUserProfile(user) {
+        // Desktop
+        document.getElementById("auth-buttons").classList.add("hidden");
+        document.getElementById("user-profile").classList.remove("hidden");
+        document.getElementById("user-email").textContent = user.email;
+
+        // Mobile
+        document.getElementById("mobile-auth-buttons").classList.add("hidden");
+        document
+          .getElementById("mobile-user-profile")
+          .classList.remove("hidden");
+        document.getElementById("mobile-user-email").textContent = user.email;
+
+        // Tambahkan event listener untuk tombol logout
+        document
+          .getElementById("logout-button")
+          .addEventListener("click", handleLogout);
+        document
+          .getElementById("mobile-logout-button")
+          .addEventListener("click", handleLogout);
+      }
+
+      // Fungsi untuk menangani logout
+      async function handleLogout() {
+        try {
+          const { error } = await supabase.auth.signOut();
+          if (error) {
+            console.error("Error during logout:", error);
+            return;
+          }
+
+          // Redirect ke halaman login setelah logout
+          window.location.href = "login.html";
+        } catch (error) {
+          console.error("Error in logout:", error);
+        }
+      }
+    </script>
   </body>
 </html>

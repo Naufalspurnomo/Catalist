@@ -1,25 +1,30 @@
-import React, { useState, useMemo } from 'react';
-import { Link } from 'react-router-dom';
-import { useTable, useSortBy, useGlobalFilter, usePagination } from 'react-table';
-import { 
-  FiEdit2, 
-  FiTrash2, 
-  FiChevronDown, 
-  FiChevronUp, 
-  FiSearch, 
-  FiChevronLeft, 
+import React, { useState, useMemo } from "react";
+import { Link } from "react-router-dom";
+import {
+  useTable,
+  useSortBy,
+  useGlobalFilter,
+  usePagination,
+} from "react-table";
+import {
+  FiEdit2,
+  FiTrash2,
+  FiChevronDown,
+  FiChevronUp,
+  FiSearch,
+  FiChevronLeft,
   FiChevronRight,
-  FiEye
-} from 'react-icons/fi';
+  FiEye,
+} from "react-icons/fi";
 
 const ProductsTable = ({ products, loading, onDelete, onCategoryChange }) => {
-  const [filterInput, setFilterInput] = useState('');
-  
+  const [filterInput, setFilterInput] = useState("");
+
   // Format price
   const formatPrice = (price) => {
-    return new Intl.NumberFormat('id-ID', {
-      style: 'currency',
-      currency: 'IDR',
+    return new Intl.NumberFormat("id-ID", {
+      style: "currency",
+      currency: "IDR",
       minimumFractionDigits: 0,
     }).format(price);
   };
@@ -28,15 +33,15 @@ const ProductsTable = ({ products, loading, onDelete, onCategoryChange }) => {
   const columns = useMemo(
     () => [
       {
-        Header: 'Produk',
-        accessor: 'name',
+        Header: "Produk",
+        accessor: "name",
         Cell: ({ row }) => (
           <div className="flex items-center">
             <div className="h-10 w-10 flex-shrink-0">
-              <img 
-                className="h-10 w-10 rounded-md object-cover" 
-                src={row.original.image_url || 'https://via.placeholder.com/40'} 
-                alt={row.original.name} 
+              <img
+                className="h-10 w-10 rounded-md object-cover"
+                src={row.original.image_url || "https://via.placeholder.com/40"}
+                alt={row.original.name}
               />
             </div>
             <div className="ml-4">
@@ -48,43 +53,43 @@ const ProductsTable = ({ products, loading, onDelete, onCategoryChange }) => {
         ),
       },
       {
-        Header: 'Kategori',
-        accessor: 'category',
+        Header: "Kategori",
+        accessor: "category",
         Cell: ({ value }) => (
           <span className="px-2 py-1 text-xs rounded-full bg-gray-100">
-            {value || 'Uncategorized'}
+            {value || "Uncategorized"}
           </span>
         ),
       },
       {
-        Header: 'Harga',
-        accessor: 'price',
+        Header: "Harga",
+        accessor: "price",
         Cell: ({ value }) => formatPrice(value || 0),
       },
       {
-        Header: 'Stok',
-        accessor: 'stock',
+        Header: "Stok",
+        accessor: "stock",
         Cell: ({ value }) => {
           const stock = value || 0;
-          let stockClass = 'text-gray-500';
-          
+          let stockClass = "text-gray-500";
+
           if (stock <= 0) {
-            stockClass = 'text-red-500 font-medium';
+            stockClass = "text-red-500 font-medium";
           } else if (stock < 10) {
-            stockClass = 'text-yellow-500 font-medium';
+            stockClass = "text-yellow-500 font-medium";
           } else {
-            stockClass = 'text-green-500 font-medium';
+            stockClass = "text-green-500 font-medium";
           }
-          
+
           return <span className={stockClass}>{stock}</span>;
         },
       },
       {
-        Header: 'Aksi',
-        accessor: 'id',
+        Header: "Aksi",
+        accessor: "id",
         Cell: ({ value }) => (
           <div className="flex space-x-2">
-            <Link 
+            <Link
               to={`/products/edit/${value}`}
               className="text-blue-500 hover:text-blue-700"
               title="Edit"
@@ -98,7 +103,7 @@ const ProductsTable = ({ products, loading, onDelete, onCategoryChange }) => {
             >
               <FiTrash2 />
             </button>
-            <Link 
+            <Link
               to={`/products/${value}`}
               className="text-gray-500 hover:text-gray-700"
               title="Detail"
@@ -143,7 +148,7 @@ const ProductsTable = ({ products, loading, onDelete, onCategoryChange }) => {
 
   // Update the global filter when the filter input changes
   const handleFilterChange = (e) => {
-    const value = e.target.value || '';
+    const value = e.target.value || "";
     setGlobalFilter(value);
     setFilterInput(value);
   };
@@ -191,7 +196,11 @@ const ProductsTable = ({ products, loading, onDelete, onCategoryChange }) => {
           >
             <option value="all">Semua Kategori</option>
             {/* Get unique categories */}
-            {[...new Set(products.map(product => product.category).filter(Boolean))].map(category => (
+            {[
+              ...new Set(
+                products.map((product) => product.category).filter(Boolean)
+              ),
+            ].map((category) => (
               <option key={category} value={category}>
                 {category}
               </option>
@@ -199,56 +208,95 @@ const ProductsTable = ({ products, loading, onDelete, onCategoryChange }) => {
           </select>
         </div>
       </div>
-      
+
       <div className="overflow-x-auto">
-        <table {...getTableProps()} className="min-w-full divide-y divide-gray-200">
+        <table
+          {...getTableProps()}
+          className="min-w-full divide-y divide-gray-200"
+        >
           <thead className="bg-gray-50">
-            {headerGroups.map(headerGroup => (
-              <tr {...headerGroup.getHeaderGroupProps()}>
-                {headerGroup.headers.map(column => (
-                  <th
-                    {...column.getHeaderProps(column.getSortByToggleProps())}
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                  >
-                    <div className="flex items-center">
-                      {column.render('Header')}
-                      <span>
-                        {column.isSorted ? (
-                          column.isSortedDesc ? (
-                            <FiChevronDown className="ml-1" />
-                          ) : (
-                            <FiChevronUp className="ml-1" />
-                          )
-                        ) : (
-                          ''
-                        )}
-                      </span>
-                    </div>
-                  </th>
-                ))}
-              </tr>
-            ))}
+            {headerGroups.map((headerGroup) => {
+              // REVISI (Peringatan baris 205): Pisahkan 'key' dari props <tr>
+              const { key: headerGroupKey, ...otherHeaderGroupProps } =
+                headerGroup.getHeaderGroupProps();
+
+              return (
+                <tr key={headerGroupKey} {...otherHeaderGroupProps}>
+                  {headerGroup.headers.map((column) => {
+                    // REVISI (Peringatan baris 207): Pisahkan 'key' dari props <th>
+                    const thProps = column.getHeaderProps(
+                      column.getSortByToggleProps()
+                    );
+                    const { key: thKey, ...otherThProps } = thProps;
+
+                    return (
+                      <th
+                        key={thKey}
+                        {...otherThProps}
+                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      >
+                        <div className="flex items-center">
+                          {column.render("Header")}
+                          <span>
+                            {column.isSorted ? (
+                              column.isSortedDesc ? (
+                                <FiChevronDown className="ml-1" />
+                              ) : (
+                                <FiChevronUp className="ml-1" />
+                              )
+                            ) : (
+                              ""
+                            )}
+                          </span>
+                        </div>
+                      </th>
+                    );
+                  })}
+                </tr>
+              );
+            })}
           </thead>
-          <tbody {...getTableBodyProps()} className="bg-white divide-y divide-gray-200">
+          <tbody
+            {...getTableBodyProps()}
+            className="bg-white divide-y divide-gray-200"
+          >
             {page.length === 0 ? (
               <tr>
-                <td colSpan={columns.length} className="px-6 py-4 text-center text-gray-500">
+                <td
+                  colSpan={columns.length}
+                  className="px-6 py-4 text-center text-gray-500"
+                >
                   Tidak ada produk yang ditemukan
                 </td>
               </tr>
             ) : (
-              page.map(row => {
+              page.map((row) => {
                 prepareRow(row);
+
+                // REVISI (Peringatan baris 242): Pisahkan 'key' dari props <tr>
+                const { key: rowKey, ...otherRowProps } = row.getRowProps();
+
                 return (
-                  <tr {...row.getRowProps()} className="hover:bg-gray-50">
-                    {row.cells.map(cell => (
-                      <td
-                        {...cell.getCellProps()}
-                        className="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
-                      >
-                        {cell.render('Cell')}
-                      </td>
-                    ))}
+                  <tr
+                    key={rowKey}
+                    {...otherRowProps}
+                    className="hover:bg-gray-50"
+                  >
+                    {row.cells.map((cell) => {
+                      // REVISI (Peringatan baris 243): Pisahkan 'key' dari props <td>
+                      const { key: cellKey, ...otherCellProps } =
+                        cell.getCellProps();
+
+                      return (
+                        <td
+                          key={cellKey}
+                          {...otherCellProps}
+                          className="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
+                        >
+                          {cell.render("Cell")}
+                        </td>
+                      );
+                    })}
                   </tr>
                 );
               })
@@ -256,7 +304,7 @@ const ProductsTable = ({ products, loading, onDelete, onCategoryChange }) => {
           </tbody>
         </table>
       </div>
-      
+
       {/* Pagination */}
       <div className="px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
         <div className="flex-1 flex justify-between sm:hidden">
@@ -278,18 +326,25 @@ const ProductsTable = ({ products, loading, onDelete, onCategoryChange }) => {
         <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
           <div>
             <p className="text-sm text-gray-700">
-              Menampilkan{' '}
-              <span className="font-medium">{page.length === 0 ? 0 : state.pageIndex * state.pageSize + 1}</span>
-              {' '}-{' '}
+              Menampilkan{" "}
               <span className="font-medium">
-                {Math.min((state.pageIndex + 1) * state.pageSize, products.length)}
-              </span>
-              {' '}dari{' '}
-              <span className="font-medium">{products.length}</span> hasil
+                {page.length === 0 ? 0 : state.pageIndex * state.pageSize + 1}
+              </span>{" "}
+              -{" "}
+              <span className="font-medium">
+                {Math.min(
+                  (state.pageIndex + 1) * state.pageSize,
+                  products.length
+                )}
+              </span>{" "}
+              dari <span className="font-medium">{products.length}</span> hasil
             </p>
           </div>
           <div>
-            <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+            <nav
+              className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px"
+              aria-label="Pagination"
+            >
               <button
                 onClick={() => gotoPage(0)}
                 disabled={!canPreviousPage}
@@ -307,7 +362,7 @@ const ProductsTable = ({ products, loading, onDelete, onCategoryChange }) => {
                 <span className="sr-only">Previous</span>
                 <FiChevronLeft className="h-5 w-5" />
               </button>
-              
+
               {/* Page numbers */}
               {[...Array(pageCount)].map((_, index) => (
                 <button
@@ -315,14 +370,14 @@ const ProductsTable = ({ products, loading, onDelete, onCategoryChange }) => {
                   onClick={() => gotoPage(index)}
                   className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
                     state.pageIndex === index
-                      ? 'z-10 bg-primary border-primary text-dark'
-                      : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+                      ? "z-10 bg-primary border-primary text-dark"
+                      : "bg-white border-gray-300 text-gray-500 hover:bg-gray-50"
                   }`}
                 >
                   {index + 1}
                 </button>
               ))}
-              
+
               <button
                 onClick={() => nextPage()}
                 disabled={!canNextPage}
