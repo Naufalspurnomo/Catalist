@@ -2,6 +2,14 @@
 
 This guide explains how to deploy the Catalis Admin Panel to Vercel as a separate project.
 
+> ⚠️ **PENTING: Environment Variables Wajib Diisi!**
+>
+> Jika Anda tidak set `REACT_APP_SUPABASE_URL` dan `REACT_APP_SUPABASE_ANON_KEY` di Vercel, admin panel akan error saat login dengan pesan:
+>
+> **"Failed to execute 'fetch' on 'Window': Invalid value"**
+>
+> Lihat **Step 2** di bawah untuk cara set environment variables yang benar.
+
 ## Prerequisites
 
 - GitHub account with this repository pushed
@@ -22,19 +30,30 @@ This guide explains how to deploy the Catalis Admin Panel to Vercel as a separat
    - **Build Command**: `npm run build` (auto-filled)
    - **Output Directory**: `build` (auto-filled)
 
-### 2. Configure Environment Variables
+### 2. Configure Environment Variables ⚠️ **WAJIB!**
+
+> **CRITICAL**: Jangan skip step ini! Tanpa environment variables, login akan error.
 
 Before deploying, add these environment variables in Vercel:
 
 1. In the project configuration page, scroll to **"Environment Variables"**
-2. Add the following variables:
+2. Click **"Add New"** dan isi satu per satu:
 
-   ```
-   REACT_APP_SUPABASE_URL=https://anzsbqqippijhemwxkqh.supabase.co
-   REACT_APP_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFuenNicXFpcHBpamhlbXd4a3FoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEyMDM1MTQsImV4cCI6MjA3Njc3OTUxNH0.6l1Bt9_5_5ohFeH8IN6mP9jU0pFUToHMmV1NwQEeP-Q
-   ```
+   **Variable 1:**
+   - **Key**: `REACT_APP_SUPABASE_URL`
+   - **Value**: `https://anzsbqqippijhemwxkqh.supabase.co`
+   - **Environment**: ✓ Production ✓ Preview ✓ Development (select all)
+   - Click **Save**
 
-3. Set environment for: **Production**, **Preview**, and **Development** (select all)
+   **Variable 2:**
+   - **Key**: `REACT_APP_SUPABASE_ANON_KEY`
+   - **Value**: `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFuenNicXFpcHBpamhlbXd4a3FoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEyMDM1MTQsImV4cCI6MjA3Njc3OTUxNH0.6l1Bt9_5_5ohFeH8IN6mP9jU0pFUToHMmV1NwQEeP-Q`
+   - **Environment**: ✓ Production ✓ Preview ✓ Development (select all)
+   - Click **Save**
+
+3. **Verify**: Pastikan ada 2 variables di list dengan prefix `REACT_APP_`
+
+> **Jika sudah deploy tapi lupa set env vars**: Lihat file `FIX-LOGIN-ERROR.md` untuk cara fix.
 
 ### 3. Deploy
 
