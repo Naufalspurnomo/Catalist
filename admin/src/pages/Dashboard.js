@@ -118,14 +118,14 @@ const Dashboard = () => {
         .from("orders")
         .select(
           `
-        id,
-        order_number,
-        user_id,
-        status,
-        total_amount,
-        created_at,
-        profiles(display_name, email)
-      `
+    id,
+    order_number,
+    user_id,
+    status,
+    total_amount,
+    created_at,
+    profiles(display_name, email)
+   `
         )
         .order("created_at", { ascending: false })
         .limit(5);
@@ -394,62 +394,55 @@ const Dashboard = () => {
 
   return (
     <div>
-      {/* ... sisa JSX ... */}     {" "}
+      {/* ... sisa JSX ... */}{" "}
       <div className="mb-6">
-                <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1> 
-             {" "}
+        <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>{" "}
         <p className="text-gray-500">
-                    Ringkasan statistik dan performa toko Anda        {" "}
-        </p>
-             {" "}
+          Ringkasan statistik dan performa toko Anda{" "}
+        </p>{" "}
       </div>
-            {/* Stats Cards */}     {" "}
+      {/* Stats Cards */}{" "}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6">
-               {" "}
+        {" "}
         <StatCard
           title="Total Pendapatan"
           value={formatCurrency(stats.totalRevenue)}
           icon={<FiDollarSign className="text-primary" size={20} />}
           loading={loading}
-        />
-               {" "}
+        />{" "}
         <StatCard
           title="Total Pesanan"
           value={stats.totalOrders}
           icon={<FiShoppingBag className="text-blue-500" size={20} />}
           loading={loading}
-        />
-               {" "}
+        />{" "}
         <StatCard
           title="Total Pelanggan"
           value={stats.totalCustomers}
           icon={<FiUsers className="text-purple-500" size={20} />}
           loading={loading}
-        />
-               {" "}
+        />{" "}
         <StatCard
           title="Total Produk"
           value={stats.totalProducts}
           icon={<FiPackage className="text-green-500" size={20} />}
           loading={loading}
-        />
-             {" "}
+        />{" "}
       </div>
-            {/* Charts */}     {" "}
+      {/* Charts */}{" "}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-               {" "}
+        {" "}
         <div className="lg:col-span-2">
-                   {" "}
+          {" "}
           <div className="bg-white rounded-xl shadow-md p-6">
-                       {" "}
+            {" "}
             <div className="flex items-center justify-between mb-4">
-                           {" "}
+              {" "}
               <h3 className="text-lg font-medium text-gray-900">
-                                Grafik Penjualan              {" "}
-              </h3>
-                           {" "}
+                Grafik Penjualan{" "}
+              </h3>{" "}
               <div className="flex flex-wrap gap-2">
-                               {" "}
+                {" "}
                 <button
                   onClick={() => handlePeriodChange("daily")}
                   className={`px-3 py-1 text-xs rounded-md ${
@@ -458,11 +451,10 @@ const Dashboard = () => {
                       : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                   }`}
                 >
-                                   {" "}
-                  <FiCalendar className="inline mr-1" size={12} />             
-                      Harian                {" "}
-                </button>
-                               {" "}
+                  {" "}
+                  <FiCalendar className="inline mr-1" size={12} />
+                  Harian{" "}
+                </button>{" "}
                 <button
                   onClick={() => handlePeriodChange("weekly")}
                   className={`px-3 py-1 text-xs rounded-md ${
@@ -471,11 +463,10 @@ const Dashboard = () => {
                       : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                   }`}
                 >
-                                   {" "}
-                  <FiCalendar className="inline mr-1" size={12} />             
-                      Mingguan                {" "}
-                </button>
-                               {" "}
+                  {" "}
+                  <FiCalendar className="inline mr-1" size={12} />
+                  Mingguan{" "}
+                </button>{" "}
                 <button
                   onClick={() => handlePeriodChange("monthly")}
                   className={`px-3 py-1 text-xs rounded-md ${
@@ -484,17 +475,14 @@ const Dashboard = () => {
                       : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                   }`}
                 >
-                                   {" "}
-                  <FiCalendar className="inline mr-1" size={12} />             
-                      Bulanan                {" "}
-                </button>
-                             {" "}
-              </div>
-                         {" "}
-            </div>
-                       {" "}
+                  {" "}
+                  <FiCalendar className="inline mr-1" size={12} />
+                  Bulanan{" "}
+                </button>{" "}
+              </div>{" "}
+            </div>{" "}
             <div className="h-64 sm:h-72 lg:h-80">
-                           {" "}
+              {" "}
               {salesData ? (
                 <SalesChart
                   data={salesData}
@@ -503,39 +491,31 @@ const Dashboard = () => {
                 />
               ) : (
                 <div className="h-full flex items-center justify-center">
-                                   {" "}
-                  <p className="text-gray-400">Tidak ada data penjualan</p>     
-                           {" "}
+                  {" "}
+                  <p className="text-gray-400">Tidak ada data penjualan</p>{" "}
                 </div>
-              )}
-                         {" "}
-            </div>
-                     {" "}
-          </div>
-                 {" "}
-        </div>
-               {" "}
+              )}{" "}
+            </div>{" "}
+          </div>{" "}
+        </div>{" "}
         <div>
-                   {" "}
+          {" "}
           {orderStatusData ? (
             <OrderStatusChart data={orderStatusData} loading={loading} />
           ) : (
             <div className="bg-white rounded-xl shadow-md p-6 h-full flex items-center justify-center">
-                           {" "}
-              <p className="text-gray-400">Tidak ada data status pesanan</p>   
-                     {" "}
+              {" "}
+              <p className="text-gray-400">
+                Tidak ada data status pesanan
+              </p>{" "}
             </div>
-          )}
-                 {" "}
-        </div>
-             {" "}
+          )}{" "}
+        </div>{" "}
       </div>
-            {/* Recent Orders */}     {" "}
+      {/* Recent Orders */}{" "}
       <div className="mb-6">
-                <RecentOrdersTable orders={recentOrders} loading={loading} />   
-         {" "}
-      </div>
-         {" "}
+        <RecentOrdersTable orders={recentOrders} loading={loading} />{" "}
+      </div>{" "}
     </div>
   );
 };
