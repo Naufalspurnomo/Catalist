@@ -1,5 +1,19 @@
 # Database Migration: Profiles Table
 
+> ⚠️ **DEPRECATED - JANGAN GUNAKAN FILE INI**
+>
+> File `supabase-profiles-schema.sql` yang direferensikan di guide ini **TIDAK KOMPATIBEL** dengan tabel profiles yang sudah exist.
+>
+> **GUNAKAN INI SEBAGAI GANTINYA:**
+> - **Jika sudah error**: Ikuti `RECOVERY-GUIDE.md`
+> - **Setup baru**: Gunakan `supabase-profiles-fix.sql`
+>
+> Script baru (`supabase-profiles-fix.sql`) hanya ADD COLUMN tanpa drop table, sehingga aman untuk existing data.
+
+---
+
+## ⚠️ DEPRECATED CONTENT BELOW ⚠️
+
 Panduan ini menjelaskan cara menambahkan tabel `profiles` ke database Supabase untuk fitur User Management di admin panel.
 
 ## Mengapa Migration Ini Diperlukan?

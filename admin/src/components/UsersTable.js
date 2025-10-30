@@ -52,7 +52,7 @@ const UsersTable = ({ users, loading, onToggleStatus }) => {
             </div>
             <div className="ml-4">
               <div className="text-sm font-medium text-gray-900">
-                {row.original.full_name || "Unnamed User"}
+                {row.original.display_name || row.original.email || "Unnamed User"}
               </div>
               <div className="text-sm text-gray-500">{row.original.email}</div>
             </div>
