@@ -243,7 +243,7 @@ const Orders = () => {
       </div>
 
       {/* Order Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 mb-6">
         <div
           className={`bg-white rounded-lg shadow-sm p-4 cursor-pointer border-2 ${
             statusFilter === "all" ? "border-primary" : "border-transparent"
@@ -318,7 +318,7 @@ const Orders = () => {
           <div className="flex flex-wrap gap-2">
             <button
               onClick={() => handleDateRangeChange("all")}
-              className={`px-4 py-2 rounded-md text-sm ${
+              className={`px-3 py-1.5 sm:px-4 sm:py-2 rounded-md text-xs sm:text-sm ${
                 dateRange === "all"
                   ? "bg-primary text-dark"
                   : "bg-gray-100 text-gray-600 hover:bg-gray-200"
@@ -328,7 +328,7 @@ const Orders = () => {
             </button>
             <button
               onClick={() => handleDateRangeChange("today")}
-              className={`px-4 py-2 rounded-md text-sm ${
+              className={`px-3 py-1.5 sm:px-4 sm:py-2 rounded-md text-xs sm:text-sm ${
                 dateRange === "today"
                   ? "bg-primary text-dark"
                   : "bg-gray-100 text-gray-600 hover:bg-gray-200"
@@ -338,7 +338,7 @@ const Orders = () => {
             </button>
             <button
               onClick={() => handleDateRangeChange("week")}
-              className={`px-4 py-2 rounded-md text-sm ${
+              className={`px-3 py-1.5 sm:px-4 sm:py-2 rounded-md text-xs sm:text-sm ${
                 dateRange === "week"
                   ? "bg-primary text-dark"
                   : "bg-gray-100 text-gray-600 hover:bg-gray-200"
@@ -348,7 +348,7 @@ const Orders = () => {
             </button>
             <button
               onClick={() => handleDateRangeChange("month")}
-              className={`px-4 py-2 rounded-md text-sm ${
+              className={`px-3 py-1.5 sm:px-4 sm:py-2 rounded-md text-xs sm:text-sm ${
                 dateRange === "month"
                   ? "bg-primary text-dark"
                   : "bg-gray-100 text-gray-600 hover:bg-gray-200"
