@@ -131,7 +131,7 @@ async function startMidtransPayment(orderData) {
       );
 
       const backendUrl = isProduction
-        ? "https://catalis-lac.vercel.app/generate-snap-token" // URL produksi
+        ? "https://catalis-lac.vercel.app/api/generate-snap-token" // URL produksi
         : "http://localhost:3001/generate-snap-token"; // URL development
       console.log(
         `Environment detected as: ${
@@ -427,8 +427,11 @@ async function generateSnapToken(orderData) {
 
 // Fungsi untuk mendapatkan token dari backend lokal
 async function getTokenFromBackend(requestData) {
-  // URL backend harus disesuaikan dengan konfigurasi server Anda
-  const backendUrl = "http://localhost:3001/generate-snap-token";
+  // Deteksi environment production
+  const isProduction = productionHostnames.includes(window.location.hostname);
+  const backendUrl = isProduction
+    ? "https://catalis-lac.vercel.app/api/generate-snap-token"
+    : "http://localhost:3001/generate-snap-token";
   console.log("Connecting to backend at:", backendUrl);
 
   // Tambahkan timeout untuk menghindari permintaan yang terlalu lama

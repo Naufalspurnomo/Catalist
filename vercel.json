@@ -1,19 +1,12 @@
 {
-  "version": 2,
-  "builds": [
-    {
-      "src": "midtrans-callback.js",
-      "use": "@vercel/node"
-    }
-  ],
   "rewrites": [
     {
-      "source": "/generate-snap-token",
-      "destination": "/midtrans-callback.js"
+      "source": "/api/generate-snap-token",
+      "destination": "/api/midtrans-callback.js"
     },
     {
-      "source": "/midtrans-callback",
-      "destination": "/midtrans-callback.js"
+      "source": "/api/midtrans-callback",
+      "destination": "/api/midtrans-callback.js"
     }
   ],
   "env": {
