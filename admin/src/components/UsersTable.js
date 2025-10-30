@@ -98,9 +98,11 @@ const UsersTable = ({ users, loading, onToggleStatus }) => {
         Cell: ({ value, row }) => (
           <button
             onClick={() => onToggleStatus(value, !row.original.is_active)}
-            className={`text-${
-              row.original.is_active ? "red" : "green"
-            }-500 hover:text-${row.original.is_active ? "red" : "green"}-700`}
+            className={
+              row.original.is_active
+                ? "text-red-500 hover:text-red-700 transition-colors"
+                : "text-green-500 hover:text-green-700 transition-colors"
+            }
             title={row.original.is_active ? "Nonaktifkan" : "Aktifkan"}
           >
             {row.original.is_active ? (
