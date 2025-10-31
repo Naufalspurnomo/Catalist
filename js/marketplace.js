@@ -131,9 +131,41 @@ function renderProducts(productsToRender) {
                 <div class="p-4">
                     <h3 class="text-lg font-bold mb-1 truncate">${product.name}</h3>
                     <p class="text-gray-600 text-sm mb-2 line-clamp-2 h-10">${product.description || 'Tidak ada deskripsi'}</p>
-                    <div class="flex justify-between items-center mt-3">
-                        <span class="text-dark font-bold">Rp ${formatPrice(product.price || 0)}</span>
-                        <button class="add-to-cart-btn bg-primary hover:bg-yellow-400 text-dark px-3 py-1 rounded-lg text-sm font-medium transition-all"
+
+                    <!-- Price -->
+                    <div class="mb-3">
+                        <span class="text-dark font-bold text-lg">Rp ${formatPrice(product.price || 0)}</span>
+                        ${product.stock ? `<p class="text-xs text-gray-500 mt-1">Stok: ${product.stock}</p>` : ''}
+                    </div>
+
+                    <!-- Quantity Selector & Add to Cart -->
+                    <div class="flex items-center gap-2">
+                        <!-- Quantity Controls -->
+                        <div class="flex items-center border border-gray-300 rounded-lg overflow-hidden">
+                            <button class="quantity-decrease-btn px-2 py-1 bg-gray-100 hover:bg-gray-200 transition-colors"
+                                    data-product-id="${product.id}">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M5 12h14"></path>
+                                </svg>
+                            </button>
+                            <input type="number"
+                                   value="1"
+                                   min="1"
+                                   max="${product.stock || 999}"
+                                   class="quantity-input w-12 text-center border-0 focus:outline-none py-1"
+                                   data-product-id="${product.id}">
+                            <button class="quantity-increase-btn px-2 py-1 bg-gray-100 hover:bg-gray-200 transition-colors"
+                                    data-product-id="${product.id}"
+                                    ${product.stock ? `data-max-stock="${product.stock}"` : ''}>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M12 5v14"></path>
+                                    <path d="M5 12h14"></path>
+                                </svg>
+                            </button>
+                        </div>
+
+                        <!-- Add to Cart Button -->
+                        <button class="add-to-cart-btn flex-1 bg-primary hover:bg-yellow-400 text-dark px-3 py-1.5 rounded-lg text-sm font-medium transition-all"
                                 data-product-id="${product.id}">
                             + Keranjang
                         </button>
@@ -179,13 +211,43 @@ function setupEventListeners() {
             const productCard = e.target.closest('.nft-card');
             if (productCard) {
                 const productId = productCard.dataset.productId;
-                
+
+                // Handle quantity increase button
+                if (e.target.closest('.quantity-increase-btn')) {
+                    const btn = e.target.closest('.quantity-increase-btn');
+                    const input = productCard.querySelector('.quantity-input');
+                    const maxStock = btn.dataset.maxStock;
+                    let currentValue = parseInt(input.value) || 1;
+
+                    if (maxStock && currentValue >= parseInt(maxStock)) {
+                        showNotification(`Maksimal ${maxStock} item!`);
+                    } else {
+                        input.value = currentValue + 1;
+                    }
+                    e.stopPropagation();
+                    return;
+                }
+
+                // Handle quantity decrease button
+                if (e.target.closest('.quantity-decrease-btn')) {
+                    const input = productCard.querySelector('.quantity-input');
+                    let currentValue = parseInt(input.value) || 1;
+
+                    if (currentValue > 1) {
+                        input.value = currentValue - 1;
+                    }
+                    e.stopPropagation();
+                    return;
+                }
+
                 // Jika yang diklik adalah tombol add to cart
                 if (e.target.classList.contains('add-to-cart-btn')) {
-                    addProductToCart(productId);
+                    const quantityInput = productCard.querySelector('.quantity-input');
+                    const quantity = parseInt(quantityInput.value) || 1;
+                    addProductToCart(productId, quantity);
                     e.stopPropagation(); // Hindari membuka detail produk
-                } else {
-                    // Tampilkan detail produk
+                } else if (!e.target.closest('.quantity-input') && !e.target.closest('button')) {
+                    // Tampilkan detail produk (jika bukan klik input atau button)
                     showProductDetail(productId);
                 }
             }
@@ -311,10 +373,10 @@ async function showProductDetail(productId) {
 }
 
 // Fungsi untuk menambahkan produk ke keranjang
-function addProductToCart(productId) {
+function addProductToCart(productId, quantity = 1) {
     try {
         const product = products.find(p => p.id.toString() === productId.toString());
-        
+
         if (!product) {
             console.error('Product not found:', productId);
             console.log('Available products:', products);
@@ -322,13 +384,36 @@ function addProductToCart(productId) {
             showNotification('Produk tidak ditemukan!');
             return;
         }
-        
+
+        // Validasi quantity vs stock
+        if (product.stock && quantity > product.stock) {
+            showNotification(`Stok tidak mencukupi! Hanya tersisa ${product.stock} item.`);
+            return;
+        }
+
+        console.log(`🛒 Adding to cart: ${product.name} x${quantity}`);
+
         // Gunakan fungsi addToCart global yang sudah tersedia dari cart.js
         if (typeof window.addToCart === 'function') {
-            const success = window.addToCart(product);
+            // Add to cart multiple times based on quantity
+            let success = false;
+            for (let i = 0; i < quantity; i++) {
+                success = window.addToCart(product);
+            }
+
             if (success) {
+                showNotification(`${product.name} (${quantity}x) ditambahkan ke keranjang!`);
                 // Tambahkan animasi pulse pada cart button
                 addCartButtonPulse();
+
+                // Reset quantity input to 1
+                const productCard = document.querySelector(`.nft-card[data-product-id="${productId}"]`);
+                if (productCard) {
+                    const quantityInput = productCard.querySelector('.quantity-input');
+                    if (quantityInput) {
+                        quantityInput.value = 1;
+                    }
+                }
             }
         } else {
             console.error('Cart system not loaded');
