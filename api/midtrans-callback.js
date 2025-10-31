@@ -404,7 +404,7 @@ app.post("/generate-snap-token", async (req, res) => {
     // Berikan default value jika tidak ada (meskipun seharusnya selalu ada)
     const frontendOrigin =
       requestData.frontendOrigin ||
-      (isProduction ? "https://www.catalis.fun" : "http://localhost:8080");
+      (isProduction ? "https://catalist-omega.vercel.app" : "http://localhost:8080");
     console.log(`Generating token for frontend origin: ${frontendOrigin}`);
 
     // Validasi data yang diperlukan
