@@ -1,11 +1,9 @@
 // Import modul yang diperlukan
 const express = require("express");
-const bodyParser = require("body-parser");
 const { createClient } = require("@supabase/supabase-js");
 const crypto = require("crypto");
 const axios = require("axios");
 const cors = require("cors");
-const midtransClient = require("midtrans-client");
 
 // Konfigurasi Supabase
 const supabaseUrl =
@@ -37,7 +35,7 @@ const MIDTRANS_API_URL = MIDTRANS_IS_PRODUCTION
 
 // Inisialisasi Express
 const app = express();
-app.use(bodyParser.json());
+app.use(express.json()); // Gunakan built-in body parser dari Express
 
 // Konfigurasi CORS untuk mengizinkan semua permintaan
 app.use(
@@ -504,16 +502,6 @@ app.post("/generate-snap-token", async (req, res) => {
   }
 });
 
-// Jalankan server
-const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => {
-  console.log(`Midtrans callback server running on port ${PORT}`);
-  console.log(`Midtrans configuration:`);
-  console.log(`- Merchant ID: ${MIDTRANS_MERCHANT_ID}`);
-  console.log(
-    `- Environment: ${MIDTRANS_IS_PRODUCTION ? "Production" : "Sandbox"}`
-  );
-  console.log(`- API URL: ${MIDTRANS_API_URL}`);
-});
-
+// Export untuk Vercel Serverless Functions
+// Vercel akan otomatis handle routing, jadi tidak perlu app.listen()
 module.exports = app;
