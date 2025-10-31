@@ -1,7 +1,7 @@
 // Gemini AI Chatbot Integration
 // API Configuration
 const GEMINI_API_KEY = "AIzaSyAjhTGYES8ehLi_qvHR3_fH2vH36_QOrmk";
-const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`;
+const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
 
 // Chatbot State
 let chatHistory = [];
