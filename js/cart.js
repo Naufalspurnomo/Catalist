@@ -771,6 +771,9 @@ function renderCartItems() {
     
     // Setup scroll functionality
     setupScrollFunctionality();
+
+    // Setup event delegation for quantity buttons
+    setupQuantityButtonListeners();
 }
 
 // Fungsi untuk setup event listeners
@@ -778,19 +781,80 @@ function setupCartEventListeners() {
     // Event listener untuk tombol cart di navbar
     const cartButtonDesktop = document.getElementById('cart-button-desktop');
     const cartButtonMobile = document.getElementById('cart-button-mobile');
-    
+
     if (cartButtonDesktop) {
         cartButtonDesktop.addEventListener('click', openCart);
     }
-    
+
     if (cartButtonMobile) {
         cartButtonMobile.addEventListener('click', openCart);
     }
-    
+
     // Event listener untuk tombol close cart
     const closeCartBtn = document.getElementById('close-cart');
     if (closeCartBtn) {
         closeCartBtn.addEventListener('click', closeCart);
+    }
+
+    // Setup quantity button event delegation
+    setupQuantityButtonListeners();
+}
+
+// Setup event delegation for quantity control buttons
+function setupQuantityButtonListeners() {
+    const cartItemsContainer = document.getElementById('cart-items');
+
+    if (!cartItemsContainer) {
+        console.warn('⚠️ Cart items container not found');
+        return;
+    }
+
+    // Remove existing listener if any
+    cartItemsContainer.removeEventListener('click', handleQuantityClick);
+
+    // Add event delegation for all buttons in cart items
+    cartItemsContainer.addEventListener('click', handleQuantityClick);
+
+    console.log('✅ Quantity button event listeners setup complete');
+}
+
+// Handle clicks on quantity buttons using event delegation
+function handleQuantityClick(event) {
+    const target = event.target;
+
+    // Find the button element (might be the SVG or path inside)
+    const button = target.closest('.quantity-btn');
+
+    if (!button) return;
+
+    // Get product ID from the button's onclick attribute or data attribute
+    const onclickAttr = button.getAttribute('onclick');
+
+    if (!onclickAttr) return;
+
+    // Extract function name and product ID from onclick
+    // Format: "increaseQuantity(123)" or "decreaseQuantity(123)"
+    const match = onclickAttr.match(/(increase|decrease)Quantity\((\d+)\)/);
+
+    if (!match) {
+        console.error('❌ Could not parse onclick attribute:', onclickAttr);
+        return;
+    }
+
+    const action = match[1]; // "increase" or "decrease"
+    const productId = parseInt(match[2]);
+
+    console.log(`🎯 Button clicked: ${action}Quantity(${productId})`);
+
+    // Prevent default onclick behavior
+    event.preventDefault();
+    event.stopPropagation();
+
+    // Call the appropriate function
+    if (action === 'increase') {
+        increaseQuantity(productId);
+    } else if (action === 'decrease') {
+        decreaseQuantity(productId);
     }
 }
 
