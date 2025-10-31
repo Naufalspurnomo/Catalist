@@ -236,19 +236,143 @@ Ctrl + F5
 # Or clear cache di browser settings
 ```
 
-### Issue: Quantity tidak berubah
+### Issue: Quantity tidak bisa ditambah/dikurang
 
-**Cek:**
-1. Browser console untuk error messages
-2. File `js/cart.js` ter-load dengan benar
-3. JavaScript enabled di browser
+**⚠️ IMPORTANT: Baca ini jika quantity controls tidak berfungsi!**
 
-**Fix:**
-```javascript
-// Open browser console (F12)
-// Run this to test:
-increaseQuantity(123); // Replace 123 with actual product ID
+#### Step 1: Buka Browser Console untuk Debug
+
+1. **Tekan F12** untuk buka DevTools
+2. Klik tab **Console**
+3. **Hard refresh** halaman: `Ctrl + F5`
+4. Buka **keranjang belanja**
+5. **Klik tombol "+"** untuk tambah quantity
+6. **Lihat console output** - akan muncul log seperti ini:
+
+**✅ Expected Output (jika berfungsi):**
 ```
+🔼 Attempting to increase quantity for product: 123
+📦 Current cart items: [{ id: 123, name: "...", quantity: 1, stock: 10 }]
+✅ Found item: { id: 123, ... }
+📊 Current quantity: 1 Stock: 10
+✅ Updating quantity to: 2
+```
+
+**❌ Common Error Patterns:**
+
+##### Error A: "Product not found in cart"
+```
+🔼 Attempting to increase quantity for product: 123
+📦 Current cart items: [...]
+❌ Product not found in cart. ID: 123
+```
+
+**Cause**: Type mismatch (string vs number) atau cart kosong
+
+**Fix**:
+1. Clear localStorage: Buka Console, run:
+   ```javascript
+   localStorage.removeItem('cart');
+   location.reload();
+   ```
+2. Tambah produk ke cart lagi
+3. Test quantity controls
+
+##### Error B: "Stock limit reached"
+```
+🔼 Attempting to increase quantity for product: 123
+✅ Found item: { id: 123, quantity: 1, stock: 1 }
+📊 Current quantity: 1 Stock: 1
+⚠️ Stock limit reached
+```
+
+**Cause**: Produk punya stock = 1, jadi tidak bisa tambah ke 2
+
+**Fix**: Ini adalah expected behavior! Produk dengan stock terbatas tidak bisa ditambah melebihi stock.
+
+**Check stock produk di Supabase**:
+```sql
+SELECT id, name, stock FROM products WHERE id = 123;
+```
+
+Jika stock memang = 1, itu benar. Jika stock seharusnya lebih besar, update di Supabase:
+```sql
+UPDATE products SET stock = 100 WHERE id = 123;
+```
+
+##### Error C: Tidak ada log sama sekali
+
+**Cause**: JavaScript tidak ter-load atau ada error lain
+
+**Fix**:
+1. Check apakah ada **error di console** (merah)
+2. Check apakah `cart.js` ter-load:
+   ```javascript
+   // Di console, run:
+   console.log(typeof window.increaseQuantity);
+   // Expected output: "function"
+   // Jika "undefined", berarti cart.js tidak ter-load
+   ```
+3. Hard refresh: `Ctrl + Shift + R` (Chrome) atau `Ctrl + F5`
+
+#### Step 2: Manual Test
+
+Jika masih tidak work, test manual di console:
+
+```javascript
+// 1. Check cart items
+console.log(JSON.parse(localStorage.getItem('cart')));
+
+// 2. Test increase quantity (ganti 123 dengan product ID dari cart)
+window.increaseQuantity(123);
+
+// 3. Check if cart updated
+console.log(JSON.parse(localStorage.getItem('cart')));
+```
+
+#### Step 3: Verify Button Rendering
+
+Inspect tombol + / - di browser:
+
+1. **Right click** tombol "+"
+2. Klik **Inspect**
+3. Check apakah ada attribute `onclick="increaseQuantity(...)"`
+
+**Expected HTML:**
+```html
+<button onclick="increaseQuantity(123)" class="quantity-btn increase-btn">
+    <!-- SVG icon -->
+</button>
+```
+
+Jika tidak ada `onclick` atau ID salah, berarti masalah di rendering.
+
+#### Common Solutions:
+
+**Solution 1: Clear cache dan localStorage**
+```javascript
+// Di console:
+localStorage.clear();
+location.reload();
+```
+
+**Solution 2: Re-add products**
+1. Hapus semua items dari cart
+2. Refresh page
+3. Tambah produk ke cart lagi
+4. Test quantity controls
+
+**Solution 3: Check product data**
+```javascript
+// Di console, cek struktur produk:
+const cart = JSON.parse(localStorage.getItem('cart'));
+console.table(cart); // Lihat semua field: id, name, quantity, stock
+```
+
+Pastikan semua produk punya:
+- `id` (number)
+- `quantity` (number)
+- `stock` (number atau null/undefined untuk unlimited)
 
 ### Issue: Buttons tidak bisa diklik
 
