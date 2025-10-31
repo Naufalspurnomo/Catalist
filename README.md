@@ -20,6 +20,7 @@ Catalis Creative adalah platform marketplace modern yang dirancang khusus untuk 
 
 ### ✨ Fitur Utama
 
+- 🤖 **AI Chatbot Assistant** - Chatbot pintar powered by Google Gemini AI untuk bantuan customer 24/7
 - 🛒 **Product Catalog** - Tampilan produk yang menarik dengan kategori terstruktur
 - 💳 **Payment Gateway** - Integrasi lengkap dengan Midtrans (Credit Card, E-Wallet, Bank Transfer)
 - 👨‍💼 **Admin Dashboard** - Panel admin untuk mengelola produk, order, dan user
@@ -36,6 +37,7 @@ Catalis Creative adalah platform marketplace modern yang dirancang khusus untuk 
 ### Frontend
 - **HTML5/CSS3/JavaScript** - Core web technologies
 - **Vanilla JS** - Lightweight dan performant
+- **Google Gemini AI** - Intelligent chatbot assistant
 - **Midtrans Snap** - Payment popup integration
 - **Supabase Client** - Real-time database
 
