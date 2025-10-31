@@ -94,20 +94,51 @@ Sekarang setiap product card punya quantity selector sebelum add to cart!
 
 ---
 
-### 2. **Fitur Tambah/Kurang Quantity di Cart**
+### 2. **Fitur Tambah/Kurang/Hapus di Cart Sidebar** ✅ FIXED!
+
+**User Request:**
+"Nah sekarang di cart-sidebar juga, kan di situ ada fitur menghapus, menambah quantity, mengurang quantity"
 
 **Problem:**
-User report: "cart belanjaan tidak bisa ditambah dan dikurang"
+Tombol tidak berfungsi karena ES6 module scope issue (inline onclick tidak work dengan modules)
 
-**Good News:**
-✅ **Fitur sudah ada dan berfungsi!** Tidak perlu perbaikan code.
+**Solution:**
+✅ **Event Delegation untuk Semua Controls**
 
-**Verification:**
-Saya cek `js/cart.js` dan menemukan:
+Semua button di cart sidebar sekarang menggunakan **event delegation** yang reliable!
 
-#### A. Functions Already Implemented ✅
+#### A. Cart Sidebar Controls ✅
 
-**Increase Quantity** (cart.js:494-505)
+**Visual Layout:**
+```
+┌─────────────────────────────────┐
+│  KERANJANG BELANJA          [X] │
+├─────────────────────────────────┤
+│  ┌─────────────────────────┐    │
+│  │ [Image] Product Name    │🗑️ │
+│  │         Rp 100.000      │    │
+│  │  [−] [2] [+]  Rp 200.000│    │
+│  └─────────────────────────┘    │
+│  ┌─────────────────────────┐    │
+│  │ [Image] Product 2       │🗑️ │
+│  │         Rp 50.000       │    │
+│  │  [−] [1] [+]  Rp 50.000 │    │
+│  └─────────────────────────┘    │
+├─────────────────────────────────┤
+│  Total: Rp 250.000              │
+│  [Lanjut Belanja] [Checkout]   │
+└─────────────────────────────────┘
+```
+
+**Controls Available:**
+1. **🗑️ Tombol Hapus** (trash icon) - Remove item dari cart
+2. **[−] Tombol Kurang** - Decrease quantity (min: 1)
+3. **[+] Tombol Tambah** - Increase quantity (max: stock)
+4. **Quantity Display** - Angka di tengah showing current quantity
+
+#### B. Functions Already Implemented ✅
+
+**Increase Quantity** (cart.js:494-520)
 ```javascript
 function increaseQuantity(productId) {
     const item = cartItems.find(item => item.id === productId);
@@ -179,7 +210,74 @@ async function updateQuantity(productId, newQuantity) {
 </div>
 ```
 
-#### C. Features Included ✅
+**Remove from Cart** (cart.js:350-397)
+```javascript
+async function removeFromCart(productId) {
+    // Type conversion untuk handle string/number
+    const itemIndex = cartItems.findIndex(item => item.id === numericId || item.id === productId);
+
+    // Fade out animation
+    cartItemElement.style.transform = 'translateX(100%)';
+    cartItemElement.style.opacity = '0';
+
+    // Remove after animation
+    setTimeout(() => {
+        cartItems.splice(itemIndex, 1);
+        saveCartToStorage();
+        updateCartDisplay();
+        renderCartItems();
+        showCartNotification(`${removedItem.name} dihapus dari keranjang!`);
+    }, 300);
+}
+```
+
+#### C. Event Delegation System ✅
+
+**How It Works** (cart.js:804-878):
+
+```javascript
+// Setup event listener di parent container (#cart-items)
+function setupQuantityButtonListeners() {
+    const cartItemsContainer = document.getElementById('cart-items');
+    cartItemsContainer.addEventListener('click', handleQuantityClick);
+}
+
+// Handle all button clicks dengan event delegation
+function handleQuantityClick(event) {
+    const target = event.target;
+
+    // 1. Check if remove button clicked
+    const removeBtn = target.closest('.remove-btn');
+    if (removeBtn) {
+        // Parse onclick attribute: removeFromCart(123)
+        const productId = parseInt(match[1]);
+        removeFromCart(productId);
+        return;
+    }
+
+    // 2. Check if quantity button clicked
+    const button = target.closest('.quantity-btn');
+    if (button) {
+        // Parse onclick: increaseQuantity(123) or decreaseQuantity(123)
+        const action = match[1]; // "increase" or "decrease"
+        const productId = parseInt(match[2]);
+
+        if (action === 'increase') {
+            increaseQuantity(productId);
+        } else if (action === 'decrease') {
+            decreaseQuantity(productId);
+        }
+    }
+}
+```
+
+**Benefits:**
+- ✅ Works dengan ES6 modules (no window scope pollution)
+- ✅ Handles dynamically rendered buttons
+- ✅ Single event listener untuk all buttons (better performance)
+- ✅ Type-safe (convert string to number untuk ID matching)
+
+#### D. Features Included ✅
 
 **Stock Validation:**
 - ✅ Prevent increase jika quantity >= stock
@@ -191,38 +289,92 @@ async function updateQuantity(productId, newQuantity) {
 - ✅ Show confirm dialog untuk hapus item
 - ✅ Auto remove dari cart jika user confirm
 
+**Remove Item:**
+- ✅ Smooth fade-out animation (slide right + opacity)
+- ✅ Success notification: "[Product] dihapus dari keranjang!"
+- ✅ Auto-update cart total dan badge count
+
 **Animations:**
 - ✅ Loading state saat update
 - ✅ Success feedback animation
 - ✅ Smooth quantity number update
 - ✅ Auto scroll ke item jika tidak terlihat
+- ✅ Fade out animation saat remove item
 
 **Sync:**
 - ✅ Auto save ke localStorage
 - ✅ Auto sync ke Supabase (jika user login)
 - ✅ Throttled sync (max 1x per 2 detik)
 
+#### E. Console Logging for Debugging ✅
+
+Semua actions sekarang punya detailed logging:
+
+**Remove Item:**
+```
+🗑️ Attempting to remove product: 123
+📦 Current cart items: [...]
+✅ Found item to remove: { id: 123, name: "...", ... }
+```
+
+**Increase Quantity:**
+```
+🎯 Button clicked: increaseQuantity(123)
+🔼 Attempting to increase quantity for product: 123
+📦 Current cart items: [...]
+✅ Found item: { id: 123, ... }
+📊 Current quantity: 1 Stock: 10
+✅ Updating quantity to: 2
+```
+
+**Decrease Quantity:**
+```
+🎯 Button clicked: decreaseQuantity(123)
+🔽 Attempting to decrease quantity for product: 123
+✅ Found item: { id: 123, ... }
+📊 Current quantity: 2
+✅ Updating quantity to: 1
+```
+
 ---
 
 ## 🎯 What User Needs to Know
 
-### Cara Menggunakan Quantity Controls
+### Cara Menggunakan Cart Sidebar
 
-1. **Buka Keranjang Belanja**
-   - Klik icon cart di navbar
+#### 1. **Buka Keranjang Belanja**
+- Klik **icon cart** di navbar (desktop atau mobile)
+- Cart sidebar akan slide in dari kanan
 
-2. **Tambah Quantity**
-   - Klik tombol **"+"** di sebelah kanan angka quantity
-   - Tombol disabled jika sudah maksimal stock
+#### 2. **Tambah Quantity di Cart**
+- Klik tombol **"+"** di sebelah kanan angka quantity
+- Angka akan bertambah: 1 → 2 → 3
+- **Tombol disabled** jika sudah maksimal stock
+- **Notification**: "Jumlah [nama produk] diperbarui!"
+- **Subtotal otomatis update**
 
-3. **Kurang Quantity**
-   - Klik tombol **"-"** di sebelah kiri angka quantity
-   - Jika quantity = 1, akan muncul konfirmasi hapus
+#### 3. **Kurang Quantity di Cart**
+- Klik tombol **"-"** di sebelah kiri angka quantity
+- Angka akan berkurang: 3 → 2 → 1
+- Jika quantity = 1, klik "-" lagi akan muncul **konfirmasi hapus**:
+  - Dialog: "Hapus [nama produk] dari keranjang?"
+  - Klik **OK** untuk hapus
+  - Klik **Cancel** untuk batal
 
-4. **Visual Feedback**
-   - Angka quantity akan beranimasi saat di-update
-   - Subtotal otomatis update
-   - Notification muncul: "Jumlah [nama produk] diperbarui!"
+#### 4. **Hapus Item dari Cart**
+- Klik **icon 🗑️** (trash) di pojok kanan atas item
+- Item akan **fade out** dengan smooth animation
+- **Notification**: "[Nama produk] dihapus dari keranjang!"
+- **Cart total otomatis update**
+- **Badge count berkurang**
+
+#### 5. **Visual Feedback**
+- ✅ Angka quantity beranimasi saat di-update
+- ✅ Subtotal otomatis update real-time
+- ✅ Total cart update
+- ✅ Badge count di navbar update
+- ✅ Smooth animations untuk semua actions
+- ✅ Success notifications untuk setiap action
 
 ---
 
@@ -256,20 +408,89 @@ Test di berbagai devices:
 - [ ] Cart scroll height tidak menutupi buttons
 - [ ] Tombol "Lanjut Belanja" selalu visible
 - [ ] Tombol "Checkout" selalu visible
-- [ ] Quantity controls berfungsi (+ dan -)
+- [ ] **Tombol + berfungsi** (increase quantity)
+- [ ] **Tombol - berfungsi** (decrease quantity)
+- [ ] **Tombol 🗑️ berfungsi** (remove item)
+- [ ] **Konfirmasi dialog** muncul saat quantity = 1 dan klik "-"
+- [ ] **Notification** muncul setelah setiap action
+- [ ] **Subtotal** update otomatis
+- [ ] **Total cart** update otomatis
+- [ ] **Badge count** di navbar update
 - [ ] Scroll smooth saat banyak items
 
 ### Tablet (641-1024px)
 - [ ] Cart sidebar width 384px (w-96)
 - [ ] Footer buttons tidak tertutup
 - [ ] Quantity controls responsive
+- [ ] Remove button visible dan berfungsi
+- [ ] Animations smooth
 - [ ] Subtotal update otomatis
 
 ### Desktop (> 1024px)
 - [ ] Cart sidebar muncul dari kanan
 - [ ] Overlay background 50% opacity
-- [ ] Semua buttons accessible
-- [ ] Quantity validation working
+- [ ] **Semua buttons accessible dan berfungsi:**
+  - [ ] Increase (+)
+  - [ ] Decrease (-)
+  - [ ] Remove (🗑️)
+- [ ] Quantity validation working (tidak bisa melebihi stock)
+- [ ] Console logging visible (F12)
+
+### Functional Tests (All Devices)
+
+#### Test 1: Increase Quantity
+1. Buka cart dengan 1 item (quantity = 1)
+2. Klik tombol "+"
+3. **Expected:**
+   - ✅ Quantity jadi 2
+   - ✅ Subtotal double
+   - ✅ Total update
+   - ✅ Notification: "Jumlah [product] diperbarui!"
+   - ✅ Console log: "🎯 Button clicked: increaseQuantity(...)"
+
+#### Test 2: Decrease Quantity
+1. Buka cart dengan item (quantity = 3)
+2. Klik tombol "-"
+3. **Expected:**
+   - ✅ Quantity jadi 2
+   - ✅ Subtotal berkurang
+   - ✅ Total update
+   - ✅ Notification muncul
+
+#### Test 3: Decrease to 1 (Confirmation Dialog)
+1. Buka cart dengan item (quantity = 1)
+2. Klik tombol "-"
+3. **Expected:**
+   - ✅ Dialog konfirmasi: "Hapus [product] dari keranjang?"
+   - ✅ Klik "Cancel" → Item tetap ada
+   - ✅ Klik "OK" → Item hilang dengan fade animation
+
+#### Test 4: Remove Item
+1. Buka cart dengan 2+ items
+2. Klik icon 🗑️ di salah satu item
+3. **Expected:**
+   - ✅ Item fade out (slide right + opacity)
+   - ✅ Item hilang dari cart
+   - ✅ Total berkurang
+   - ✅ Badge count berkurang
+   - ✅ Notification: "[Product] dihapus dari keranjang!"
+
+#### Test 5: Stock Limit
+1. Buka cart dengan item yang stock-nya = quantity
+2. Klik tombol "+"
+3. **Expected:**
+   - ✅ Notification: "Stok maksimal X item!"
+   - ✅ Quantity tidak bertambah
+   - ✅ Button mungkin disabled
+
+#### Test 6: Multiple Actions
+1. Tambah quantity item A (+)
+2. Kurang quantity item B (-)
+3. Hapus item C (🗑️)
+4. **Expected:**
+   - ✅ Semua actions work secara independent
+   - ✅ Total selalu correct
+   - ✅ Notifications muncul untuk semua actions
 
 ---
 
