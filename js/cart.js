@@ -492,32 +492,61 @@ async function syncCartAfterChange() {
 
 // Fungsi untuk menambah quantity
 function increaseQuantity(productId) {
-    const item = cartItems.find(item => item.id === productId);
-    if (!item) return;
-    
+    console.log('🔼 Attempting to increase quantity for product:', productId);
+    console.log('📦 Current cart items:', cartItems);
+
+    // Convert to number to handle type mismatch
+    const numericId = typeof productId === 'string' ? parseInt(productId) : productId;
+    const item = cartItems.find(item => item.id === numericId || item.id === productId);
+
+    if (!item) {
+        console.error('❌ Product not found in cart. ID:', productId);
+        showCartNotification('Produk tidak ditemukan di keranjang');
+        return;
+    }
+
+    console.log('✅ Found item:', item);
+    console.log('📊 Current quantity:', item.quantity, 'Stock:', item.stock);
+
     // Validasi stok
     if (item.stock && item.quantity >= item.stock) {
+        console.warn('⚠️ Stock limit reached');
         showCartNotification(`Stok maksimal ${item.stock} item!`);
         return;
     }
-    
-    updateQuantity(productId, item.quantity + 1);
+
+    console.log('✅ Updating quantity to:', item.quantity + 1);
+    updateQuantity(numericId || productId, item.quantity + 1);
 }
 
 // Fungsi untuk mengurangi quantity
 function decreaseQuantity(productId) {
-    const item = cartItems.find(item => item.id === productId);
-    if (!item) return;
-    
+    console.log('🔽 Attempting to decrease quantity for product:', productId);
+
+    // Convert to number to handle type mismatch
+    const numericId = typeof productId === 'string' ? parseInt(productId) : productId;
+    const item = cartItems.find(item => item.id === numericId || item.id === productId);
+
+    if (!item) {
+        console.error('❌ Product not found in cart. ID:', productId);
+        showCartNotification('Produk tidak ditemukan di keranjang');
+        return;
+    }
+
+    console.log('✅ Found item:', item);
+    console.log('📊 Current quantity:', item.quantity);
+
     if (item.quantity <= 1) {
         // Konfirmasi hapus item jika quantity akan menjadi 0
+        console.log('⚠️ Quantity is 1, asking for confirmation to remove');
         if (confirm(`Hapus ${item.name} dari keranjang?`)) {
-            removeFromCart(productId);
+            removeFromCart(numericId || productId);
         }
         return;
     }
-    
-    updateQuantity(productId, item.quantity - 1);
+
+    console.log('✅ Updating quantity to:', item.quantity - 1);
+    updateQuantity(numericId || productId, item.quantity - 1);
 }
 
 // Fungsi untuk scroll ke item tertentu dalam cart
