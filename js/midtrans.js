@@ -131,7 +131,7 @@ async function startMidtransPayment(orderData) {
       );
 
       const backendUrl = isProduction
-        ? "https://newcatalist.vercel.app/api/generate-snap-token" // URL produksi
+        ? "https://catalist-omega.vercel.app/api/generate-snap-token" // URL produksi
         : "http://localhost:3001/generate-snap-token"; // URL development
       console.log(
         `Environment detected as: ${
@@ -430,7 +430,7 @@ async function getTokenFromBackend(requestData) {
   // Deteksi environment production
   const isProduction = productionHostnames.includes(window.location.hostname);
   const backendUrl = isProduction
-    ? "https://newcatalist.vercel.app/api/generate-snap-token"
+    ? "https://catalist-omega.vercel.app/api/generate-snap-token"
     : "http://localhost:3001/generate-snap-token";
   console.log("Connecting to backend at:", backendUrl);
 
