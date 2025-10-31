@@ -1,12 +1,19 @@
 {
-  "rewrites": [
+  "version": 2,
+  "builds": [
     {
-      "source": "/api/generate-snap-token",
-      "destination": "/api/midtrans-callback.js"
+      "src": "api/midtrans-callback.js",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/generate-snap-token",
+      "dest": "/api/midtrans-callback.js"
     },
     {
-      "source": "/api/midtrans-callback",
-      "destination": "/api/midtrans-callback.js"
+      "src": "/api/midtrans-callback",
+      "dest": "/api/midtrans-callback.js"
     }
   ],
   "env": {
@@ -20,8 +27,9 @@
   },
   "headers": [
     {
-      "source": "/(.*)",
+      "source": "/api/(.*)",
       "headers": [
+        { "key": "Access-Control-Allow-Credentials", "value": "true" },
         { "key": "Access-Control-Allow-Origin", "value": "*" },
         {
           "key": "Access-Control-Allow-Methods",
@@ -29,7 +37,7 @@
         },
         {
           "key": "Access-Control-Allow-Headers",
-          "value": "X-Requested-With, Content-Type, Accept"
+          "value": "X-Requested-With, Content-Type, Accept, Authorization"
         }
       ]
     }
