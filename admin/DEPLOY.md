@@ -133,9 +133,9 @@ The `vercel.json` file includes SPA routing configuration. If you still get 404 
 
 ## URLs After Deployment
 
-- **Main App**: https://newcatalist.vercel.app/
+- **Main App**: https://catalist-omega.vercel.app/
 - **Admin Panel**: https://catalis-admin.vercel.app/ (or your chosen domain)
-- **API Backend**: https://newcatalist.vercel.app/api/
+- **API Backend**: https://catalist-omega.vercel.app/api/
 
 Both applications share the same Supabase database.
 
