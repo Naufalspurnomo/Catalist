@@ -352,9 +352,11 @@ async function removeFromCart(productId) {
         console.log('🗑️ Attempting to remove product:', productId);
         console.log('📦 Current cart items:', cartItems);
 
-        // Convert to number to handle type mismatch
-        const numericId = typeof productId === 'string' ? parseInt(productId) : productId;
-        const itemIndex = cartItems.findIndex(item => item.id === numericId || item.id === productId);
+        // Find item by matching ID (handles both string UUID and number)
+        const itemIndex = cartItems.findIndex(item => {
+            // Compare as strings to handle UUID
+            return String(item.id) === String(productId);
+        });
 
         if (itemIndex === -1) {
             console.error('❌ Product not found in cart. ID:', productId);
@@ -410,7 +412,12 @@ async function removeFromCart(productId) {
 // Fungsi untuk mengubah quantity produk dengan validasi dan animasi
 async function updateQuantity(productId, newQuantity) {
     try {
-        const itemIndex = cartItems.findIndex(item => item.id === productId);
+        // Find item by matching ID (handles both string UUID and number)
+        const itemIndex = cartItems.findIndex(item => {
+            // Compare as strings to handle UUID
+            return String(item.id) === String(productId);
+        });
+
         if (itemIndex === -1) return;
 
         // Validasi: quantity tidak boleh kurang dari 1
@@ -506,9 +513,11 @@ function increaseQuantity(productId) {
     console.log('🔼 Attempting to increase quantity for product:', productId);
     console.log('📦 Current cart items:', cartItems);
 
-    // Convert to number to handle type mismatch
-    const numericId = typeof productId === 'string' ? parseInt(productId) : productId;
-    const item = cartItems.find(item => item.id === numericId || item.id === productId);
+    // Find item by matching ID (handles both string UUID and number)
+    const item = cartItems.find(item => {
+        // Compare as strings to handle UUID
+        return String(item.id) === String(productId);
+    });
 
     if (!item) {
         console.error('❌ Product not found in cart. ID:', productId);
@@ -527,16 +536,18 @@ function increaseQuantity(productId) {
     }
 
     console.log('✅ Updating quantity to:', item.quantity + 1);
-    updateQuantity(numericId || productId, item.quantity + 1);
+    updateQuantity(productId, item.quantity + 1);
 }
 
 // Fungsi untuk mengurangi quantity
 function decreaseQuantity(productId) {
     console.log('🔽 Attempting to decrease quantity for product:', productId);
 
-    // Convert to number to handle type mismatch
-    const numericId = typeof productId === 'string' ? parseInt(productId) : productId;
-    const item = cartItems.find(item => item.id === numericId || item.id === productId);
+    // Find item by matching ID (handles both string UUID and number)
+    const item = cartItems.find(item => {
+        // Compare as strings to handle UUID
+        return String(item.id) === String(productId);
+    });
 
     if (!item) {
         console.error('❌ Product not found in cart. ID:', productId);
@@ -551,13 +562,13 @@ function decreaseQuantity(productId) {
         // Konfirmasi hapus item jika quantity akan menjadi 0
         console.log('⚠️ Quantity is 1, asking for confirmation to remove');
         if (confirm(`Hapus ${item.name} dari keranjang?`)) {
-            removeFromCart(numericId || productId);
+            removeFromCart(productId);
         }
         return;
     }
 
     console.log('✅ Updating quantity to:', item.quantity - 1);
-    updateQuantity(numericId || productId, item.quantity - 1);
+    updateQuantity(productId, item.quantity - 1);
 }
 
 // Fungsi untuk scroll ke item tertentu dalam cart
@@ -838,9 +849,13 @@ function handleQuantityClick(event) {
     if (removeBtn) {
         const onclickAttr = removeBtn.getAttribute('onclick');
         if (onclickAttr) {
-            const match = onclickAttr.match(/removeFromCart\((\d+)\)/);
+            // Match UUID, number, or any string: removeFromCart(xxx)
+            const match = onclickAttr.match(/removeFromCart\(([^)]+)\)/);
             if (match) {
-                const productId = parseInt(match[1]);
+                let productId = match[1];
+                // Remove quotes if present
+                productId = productId.replace(/['"]/g, '');
+
                 console.log(`🗑️ Remove button clicked for product: ${productId}`);
 
                 event.preventDefault();
@@ -857,14 +872,14 @@ function handleQuantityClick(event) {
 
     if (!button) return;
 
-    // Get product ID from the button's onclick attribute or data attribute
+    // Get product ID from the button's onclick attribute
     const onclickAttr = button.getAttribute('onclick');
 
     if (!onclickAttr) return;
 
     // Extract function name and product ID from onclick
-    // Format: "increaseQuantity(123)" or "decreaseQuantity(123)"
-    const match = onclickAttr.match(/(increase|decrease)Quantity\((\d+)\)/);
+    // Format: "increaseQuantity(123)" or "increaseQuantity('uuid')" or "increaseQuantity(uuid)"
+    const match = onclickAttr.match(/(increase|decrease)Quantity\(([^)]+)\)/);
 
     if (!match) {
         console.error('❌ Could not parse onclick attribute:', onclickAttr);
@@ -872,7 +887,13 @@ function handleQuantityClick(event) {
     }
 
     const action = match[1]; // "increase" or "decrease"
-    const productId = parseInt(match[2]);
+    let productId = match[2];
+
+    // Remove quotes if present
+    productId = productId.replace(/['"]/g, '');
+
+    // Try to convert to number if it's numeric, otherwise keep as string (UUID)
+    const numericId = /^\d+$/.test(productId) ? parseInt(productId) : productId;
 
     console.log(`🎯 Button clicked: ${action}Quantity(${productId})`);
 
@@ -880,11 +901,11 @@ function handleQuantityClick(event) {
     event.preventDefault();
     event.stopPropagation();
 
-    // Call the appropriate function
+    // Call the appropriate function with the parsed ID
     if (action === 'increase') {
-        increaseQuantity(productId);
+        increaseQuantity(numericId);
     } else if (action === 'decrease') {
-        decreaseQuantity(productId);
+        decreaseQuantity(numericId);
     }
 }
 
