@@ -4,6 +4,60 @@ Dokumentasi perbaikan keranjang belanja untuk masalah layout dan fitur quantity 
 
 ## 📋 Issues yang Diperbaiki
 
+### 0. **Fitur Quantity Selector Sebelum Add to Cart** ⭐ NEW!
+
+**User Request:**
+"Maksudnya saya itu fitur membeli barangnya, misal mau beli 2 barang kan ada tombol + nah itu bisa berfungsi"
+
+**Solution:**
+✅ **Quantity Selector di Product Card**
+
+Sekarang setiap product card punya quantity selector sebelum add to cart!
+
+**Features:**
+```
+[Product Card]
+┌─────────────────────────┐
+│  [Product Image]        │
+│  Product Name           │
+│  Description            │
+│  Rp 100.000             │
+│  Stok: 50               │
+│                         │
+│  [−] [1] [+] [+ Keranjang] │
+└─────────────────────────┘
+```
+
+**How to Use:**
+1. **Tombol "-"**: Kurangi quantity (minimum 1)
+2. **Input Number**: Ketik langsung jumlah yang diinginkan
+3. **Tombol "+"**: Tambah quantity (maksimal = stock)
+4. **Klik "+ Keranjang"**: Add dengan quantity yang dipilih
+
+**Validations:**
+- ✅ Minimum quantity: 1
+- ✅ Maximum quantity: stock produk
+- ✅ Notification jika melebihi stock: "Maksimal X item!"
+- ✅ Auto-reset ke 1 setelah add to cart
+
+**User Flow Example:**
+```
+1. User lihat produk → Stok: 10
+2. Klik tombol "+" → Quantity jadi 2
+3. Klik tombol "+" lagi → Quantity jadi 3
+4. Klik "+ Keranjang"
+5. Notification: "Nama Produk (3x) ditambahkan ke keranjang!"
+6. Quantity input reset ke 1
+7. Buka cart → Ada 3 items dengan nama produk tersebut
+```
+
+**Code Changes:**
+- **js/marketplace.js:131-173**: Product card template dengan quantity selector
+- **js/marketplace.js:215-241**: Event handlers untuk +/- buttons
+- **js/marketplace.js:376-426**: addProductToCart() dengan quantity parameter
+
+---
+
 ### 1. **Cart Items Menutupi Tombol "Lanjut Belanja"**
 
 **Problem:**
