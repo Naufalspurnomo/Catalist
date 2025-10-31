@@ -56,10 +56,10 @@
 
         <!-- Cart Items -->
         <div class="flex-1 overflow-y-auto bg-white cart-scroll-container" id="cart-scroll-area">
-            <div id="cart-items" class="divide-y divide-gray-100">
+            <div id="cart-items" class="divide-y divide-gray-100 pb-4">
                 <!-- Cart items will be dynamically inserted here -->
             </div>
-            
+
             <!-- Custom Scroll Indicator -->
             <div class="scroll-indicator" id="scroll-indicator">
                 <div class="scroll-track">
@@ -69,7 +69,7 @@
         </div>
 
         <!-- Cart Summary & Actions -->
-        <div class="border-t border-gray-200 bg-white">
+        <div class="border-t border-gray-200 bg-white flex-shrink-0">
             <!-- Subtotal Section -->
             <div class="px-6 py-4 bg-gray-50">
                 <div class="space-y-2">
@@ -249,7 +249,9 @@
     scroll-behavior: smooth;
     scrollbar-width: thin;
     scrollbar-color: rgba(168, 85, 247, 0.3) transparent;
-    max-height: 60vh; /* Batasi tinggi untuk memaksa scroll */
+    max-height: calc(100vh - 420px); /* Dinamis: viewport - (header + summary + buttons) */
+    flex: 1;
+    overflow-y: auto;
 }
 
 .cart-scroll-container::-webkit-scrollbar {
@@ -396,15 +398,26 @@
     #cart-sidebar {
         width: 100vw;
     }
-    
+
     .cart-item {
         padding: 16px;
     }
-    
+
     .quantity-btn {
         width: 28px;
         height: 28px;
         font-size: 14px;
+    }
+
+    .cart-scroll-container {
+        max-height: calc(100vh - 380px); /* Lebih tinggi di mobile */
+    }
+}
+
+/* Tablet adjustments */
+@media (min-width: 641px) and (max-width: 1024px) {
+    .cart-scroll-container {
+        max-height: calc(100vh - 400px);
     }
 }
 

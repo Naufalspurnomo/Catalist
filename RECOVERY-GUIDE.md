@@ -252,3 +252,34 @@ Jika masih ada masalah setelah ikuti guide ini:
 - Admin panel working
 - User toggle status working
 - All data preserved
+
+---
+
+## Troubleshooting: Toggle User Status Tidak Berfungsi
+
+Jika setelah recovery, fitur toggle aktif/nonaktif user masih tidak berfungsi, ikuti panduan lengkap di:
+
+**📄 File: `admin/TROUBLESHOOT-USERS-TOGGLE.md`**
+
+### Quick Fix:
+
+1. **Pastikan migration sudah dijalankan**:
+   ```sql
+   -- Cek field is_active ada
+   SELECT column_name FROM information_schema.columns
+   WHERE table_name = 'profiles' AND column_name = 'is_active';
+   ```
+   Jika tidak ada output, run `supabase-profiles-fix.sql`
+
+2. **Set admin role untuk user Anda**:
+   ```sql
+   UPDATE profiles
+   SET role = 'admin', is_active = true
+   WHERE email = 'your-email@example.com';
+   ```
+
+3. **Logout & login kembali** di admin panel
+
+4. **Test toggle** di halaman Users
+
+Jika masih tidak work, baca panduan lengkap di `TROUBLESHOOT-USERS-TOGGLE.md` untuk diagnostic step-by-step.
