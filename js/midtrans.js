@@ -125,7 +125,12 @@ async function startMidtransPayment(orderData) {
     try {
       // Gunakan backend untuk mendapatkan token dan redirect URL
       // Deteksi apakah aplikasi berjalan di lingkungan produksi atau development
-      const productionHostnames = ["catalis-lac.vercel.app", "www.catalis.fun"]; // Tambahkan domain produksi Anda
+      const productionHostnames = [
+        "catalist-omega.vercel.app",
+        "catalis-lac.vercel.app",
+        "www.catalis.fun",
+        "catalist-9b34b5mwu-naufalspurnomos-projects-964e670f.vercel.app",
+      ];
       const isProduction = productionHostnames.includes(
         window.location.hostname
       );
@@ -428,6 +433,12 @@ async function generateSnapToken(orderData) {
 // Fungsi untuk mendapatkan token dari backend lokal
 async function getTokenFromBackend(requestData) {
   // Deteksi environment production
+  const productionHostnames = [
+    "catalist-omega.vercel.app",
+    "catalis-lac.vercel.app",
+    "www.catalis.fun",
+    "catalist-9b34b5mwu-naufalspurnomos-projects-964e670f.vercel.app",
+  ];
   const isProduction = productionHostnames.includes(window.location.hostname);
   const backendUrl = isProduction
     ? "https://catalist-omega.vercel.app/api/generate-snap-token"
