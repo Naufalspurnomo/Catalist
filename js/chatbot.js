@@ -217,6 +217,8 @@ Jika pertanyaan di luar topik Catalis, tetap jawab dengan sopan tapi arahkan kem
 
   try {
     // Call Gemini API
+    console.log("Calling Gemini API...", GEMINI_API_URL);
+
     const response = await fetch(GEMINI_API_URL, {
       method: "POST",
       headers: {
@@ -239,13 +241,19 @@ Jika pertanyaan di luar topik Catalis, tetap jawab dengan sopan tapi arahkan kem
       }),
     });
 
+    console.log("API Response Status:", response.status);
+
     if (!response.ok) {
-      throw new Error(`API Error: ${response.status}`);
+      const errorData = await response.json().catch(() => ({}));
+      console.error("API Error Response:", errorData);
+      throw new Error(`API Error: ${response.status} - ${JSON.stringify(errorData)}`);
     }
 
     const data = await response.json();
+    console.log("API Response Data:", data);
+
     const botResponse =
-      data.candidates[0]?.content?.parts[0]?.text ||
+      data.candidates?.[0]?.content?.parts?.[0]?.text ||
       "Maaf, saya tidak bisa memproses pertanyaan Anda saat ini.";
 
     // Hide typing indicator
@@ -261,14 +269,24 @@ Jika pertanyaan di luar topik Catalis, tetap jawab dengan sopan tapi arahkan kem
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
-    console.error("Chatbot Error:", error);
+    console.error("Chatbot Error Details:", error);
+    console.error("Error Message:", error.message);
+    console.error("Error Stack:", error.stack);
 
     hideTypingIndicator();
 
-    addMessage(
-      "Maaf, terjadi kesalahan dalam memproses pertanyaan Anda. Silakan coba lagi.",
-      "bot"
-    );
+    // More helpful error message
+    let errorMessage = "Maaf, terjadi kesalahan dalam memproses pertanyaan Anda.";
+
+    if (error.message.includes("403")) {
+      errorMessage = "API key tidak valid atau quota habis. Mohon hubungi administrator.";
+    } else if (error.message.includes("429")) {
+      errorMessage = "Terlalu banyak request. Silakan tunggu sebentar dan coba lagi.";
+    } else if (error.message.includes("NetworkError") || error.message.includes("Failed to fetch")) {
+      errorMessage = "Koneksi internet bermasalah. Silakan cek koneksi Anda.";
+    }
+
+    addMessage(errorMessage, "bot");
   }
 }
 
