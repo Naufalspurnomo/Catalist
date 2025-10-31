@@ -349,10 +349,21 @@ async function addToCart(product) {
 // Fungsi untuk menghapus produk dari keranjang dengan konfirmasi
 async function removeFromCart(productId) {
     try {
-        const itemIndex = cartItems.findIndex(item => item.id === productId);
-        if (itemIndex === -1) return;
+        console.log('🗑️ Attempting to remove product:', productId);
+        console.log('📦 Current cart items:', cartItems);
+
+        // Convert to number to handle type mismatch
+        const numericId = typeof productId === 'string' ? parseInt(productId) : productId;
+        const itemIndex = cartItems.findIndex(item => item.id === numericId || item.id === productId);
+
+        if (itemIndex === -1) {
+            console.error('❌ Product not found in cart. ID:', productId);
+            showCartNotification('Produk tidak ditemukan di keranjang');
+            return;
+        }
 
         const removedItem = cartItems[itemIndex];
+        console.log('✅ Found item to remove:', removedItem);
         
         // Tambahkan animasi fade out
         const cartItemElement = document.querySelector(`[data-item-id="${productId}"]`);
@@ -818,11 +829,30 @@ function setupQuantityButtonListeners() {
     console.log('✅ Quantity button event listeners setup complete');
 }
 
-// Handle clicks on quantity buttons using event delegation
+// Handle clicks on quantity buttons and remove button using event delegation
 function handleQuantityClick(event) {
     const target = event.target;
 
-    // Find the button element (might be the SVG or path inside)
+    // Handle remove button clicks
+    const removeBtn = target.closest('.remove-btn');
+    if (removeBtn) {
+        const onclickAttr = removeBtn.getAttribute('onclick');
+        if (onclickAttr) {
+            const match = onclickAttr.match(/removeFromCart\((\d+)\)/);
+            if (match) {
+                const productId = parseInt(match[1]);
+                console.log(`🗑️ Remove button clicked for product: ${productId}`);
+
+                event.preventDefault();
+                event.stopPropagation();
+
+                removeFromCart(productId);
+                return;
+            }
+        }
+    }
+
+    // Handle quantity buttons (+ and -)
     const button = target.closest('.quantity-btn');
 
     if (!button) return;
