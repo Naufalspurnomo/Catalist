@@ -7,11 +7,13 @@ let filteredProducts = [];
 let categories = [];
 let currentCategory = 'all';
 let searchQuery = '';
+let currentSort = 'recent';
 
 // Element references
 const productGrid = document.getElementById('product-grid');
 const searchInput = document.getElementById('search-input');
 const categoryFilters = document.getElementById('category-filters');
+const sortSelect = document.getElementById('sort-select');
 const loadingIndicator = document.getElementById('loading-indicator');
 
 // Inisialisasi halaman
@@ -192,7 +194,8 @@ function setupEventListeners() {
                 
                 // Filter produk berdasarkan kategori
                 currentCategory = e.target.dataset.category;
-                filterProducts();
+                console.log('🏷️ Category changed to:', currentCategory);
+                filterAndSortProducts();
             }
         });
     }
@@ -201,7 +204,16 @@ function setupEventListeners() {
     if (searchInput) {
         searchInput.addEventListener('input', (e) => {
             searchQuery = e.target.value.toLowerCase().trim();
-            filterProducts();
+            filterAndSortProducts();
+        });
+    }
+
+    // Event listener untuk sorting
+    if (sortSelect) {
+        sortSelect.addEventListener('change', (e) => {
+            currentSort = e.target.value;
+            console.log('🔄 Sort changed to:', currentSort);
+            filterAndSortProducts();
         });
     }
     
@@ -255,21 +267,63 @@ function setupEventListeners() {
     }
 }
 
-// Fungsi untuk filter produk berdasarkan kategori dan pencarian
-function filterProducts() {
+// Fungsi untuk filter dan sort produk
+function filterAndSortProducts() {
+    // 1. Filter berdasarkan kategori dan pencarian
     filteredProducts = products.filter(product => {
         // Filter berdasarkan kategori
         const categoryMatch = currentCategory === 'all' || product.category === currentCategory;
-        
+
         // Filter berdasarkan pencarian
-        const searchMatch = !searchQuery || 
-            product.name.toLowerCase().includes(searchQuery) || 
+        const searchMatch = !searchQuery ||
+            product.name.toLowerCase().includes(searchQuery) ||
             (product.description && product.description.toLowerCase().includes(searchQuery));
-            
+
         return categoryMatch && searchMatch;
     });
-    
+
+    // 2. Sort hasil filter
+    sortProducts();
+
+    // 3. Render products
     renderProducts(filteredProducts);
+
+    console.log(`📊 Filtered: ${filteredProducts.length}/${products.length} products | Category: ${currentCategory} | Search: "${searchQuery}" | Sort: ${currentSort}`);
+}
+
+// Fungsi untuk sort products
+function sortProducts() {
+    switch (currentSort) {
+        case 'price-low':
+            // Harga terendah ke tertinggi
+            filteredProducts.sort((a, b) => (a.price || 0) - (b.price || 0));
+            break;
+
+        case 'price-high':
+            // Harga tertinggi ke terendah
+            filteredProducts.sort((a, b) => (b.price || 0) - (a.price || 0));
+            break;
+
+        case 'name-asc':
+            // Nama A ke Z
+            filteredProducts.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+            break;
+
+        case 'name-desc':
+            // Nama Z ke A
+            filteredProducts.sort((a, b) => (b.name || '').localeCompare(a.name || ''));
+            break;
+
+        case 'recent':
+        default:
+            // Recently added (newest first)
+            filteredProducts.sort((a, b) => {
+                const dateA = new Date(a.created_at || 0);
+                const dateB = new Date(b.created_at || 0);
+                return dateB - dateA; // Descending
+            });
+            break;
+    }
 }
 
 // Fungsi untuk menampilkan detail produk
