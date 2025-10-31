@@ -337,7 +337,7 @@
         
         <!-- Shopping Cart dan Purchase History Buttons -->
         <div class="flex justify-between items-center mb-6">
-            <div class="flex flex-wrap justify-center gap-2 sm:gap-4">
+            <div id="category-filters" class="flex flex-wrap justify-center gap-2 sm:gap-4">
                 <button class="filter-btn active px-3 sm:px-6 py-2 rounded-full bg-gray-100 hover:bg-gray-200 transition text-sm sm:text-base" data-category="all">Semua</button>
                 <button class="filter-btn px-3 sm:px-6 py-2 rounded-full bg-gray-100 hover:bg-gray-200 transition text-sm sm:text-base" data-category="Buku">Buku</button>
                 <button class="filter-btn px-3 sm:px-6 py-2 rounded-full bg-gray-100 hover:bg-gray-200 transition text-sm sm:text-base" data-category="Lukisan">Lukisan</button>
@@ -348,16 +348,17 @@
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 sm:mb-8">
             <div class="flex items-center w-full sm:w-auto">
                 <span class="mr-2 text-sm sm:text-base">Sort by:</span>
-                <select class="bg-gray-100 border-0 rounded-full px-3 sm:px-4 py-2 focus:ring-2 focus:ring-primary text-sm sm:text-base flex-1 sm:flex-none">
-                    <option>Recently Added</option>
-                    <option>Price: Low to High</option>
-                    <option>Price: High to Low</option>
-                    <option>Most Viewed</option>
+                <select id="sort-select" class="bg-gray-100 border-0 rounded-full px-3 sm:px-4 py-2 focus:ring-2 focus:ring-primary text-sm sm:text-base flex-1 sm:flex-none">
+                    <option value="recent">Recently Added</option>
+                    <option value="price-low">Price: Low to High</option>
+                    <option value="price-high">Price: High to Low</option>
+                    <option value="name-asc">Name: A to Z</option>
+                    <option value="name-desc">Name: Z to A</option>
                 </select>
             </div>
             <div class="w-full sm:w-auto">
                 <div class="relative">
-                    <input type="text" placeholder="Search items, collections..." class="bg-gray-100 border-0 rounded-full px-6 py-2 pl-10 w-full sm:w-64 focus:ring-2 focus:ring-primary text-sm sm:text-base">
+                    <input type="text" id="search-input" placeholder="Cari produk..." class="bg-gray-100 border-0 rounded-full px-6 py-2 pl-10 w-full sm:w-64 focus:ring-2 focus:ring-primary text-sm sm:text-base">
                     <i data-feather="search" class="absolute left-3 top-2.5 text-gray-500"></i>
                 </div>
             </div>
