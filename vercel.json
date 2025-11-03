@@ -1,14 +1,4 @@
 {
-  "rewrites": [
-    {
-      "source": "/api/generate-snap-token",
-      "destination": "/api/midtrans-callback.js"
-    },
-    {
-      "source": "/api/midtrans-callback",
-      "destination": "/api/midtrans-callback.js"
-    }
-  ],
   "headers": [
     {
       "source": "/api/(.*)",
