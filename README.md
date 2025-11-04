@@ -294,7 +294,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 **Catalis Team**
 
 - Website: [www.catalis.fun](https://www.catalis.fun)
-- GitHub: [@yourusername](https://github.com/yourusername)
+
 
 ---
 
