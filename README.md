@@ -83,7 +83,7 @@ Catalis Creative adalah platform marketplace modern yang dirancang khusus untuk 
 
 1. **Clone repository**
    ```bash
-   git clone https://github.com/yourusername/catalis.git
+   git clone https://github.com/Naufalspurnomo/catalis.git
    cd catalis
    ```
 
